@@ -34,7 +34,9 @@ def setup_logger(output_dir: str | Path) -> None:
 
 def hash_to_int32(data: str) -> int:
     hash_bytes = hashlib.md5(data.encode()).digest()  # Get 16-byte hash
-    int32_value = struct.unpack("i", hash_bytes[:4])[0]  # Convert first 4 bytes to int32
+    int32_value = struct.unpack("i", hash_bytes[:4])[
+        0
+    ]  # Convert first 4 bytes to int32
     return int32_value
 
 
@@ -43,7 +45,9 @@ def process_replay(
 ) -> Optional[Dict[str, Any]]:
     frame_data: FrameData = defaultdict(list)
     try:
-        console = melee.Console(path=str(replay_path), is_dolphin=False, allow_old_version=True)
+        console = melee.Console(
+            path=str(replay_path), is_dolphin=False, allow_old_version=True
+        )
         console.connect()
     except Exception as e:
         logger.debug(f"Error connecting to console for {replay_path}: {e}")
@@ -82,11 +86,15 @@ def process_replay(
 
     # Skip replays with less than `min_frames` frames because they are likely incomplete/low-quality
     if all(len(v) < MIN_FRAMES for v in frame_data.values()):
-        logger.trace(f"Replay {replay_path} was less than {MIN_FRAMES} frames, skipping.")
+        logger.trace(
+            f"Replay {replay_path} was less than {MIN_FRAMES} frames, skipping."
+        )
         return None
     if check_damage:
         # Check for damage
-        if all(x == 0 for x in frame_data["p1_percent"]) or all(x == 0 for x in frame_data["p2_percent"]):
+        if all(x == 0 for x in frame_data["p1_percent"]) or all(
+            x == 0 for x in frame_data["p2_percent"]
+        ):
             logger.trace(f"Replay {replay_path} had no damage, skipping.")
             return None
     if check_complete:
@@ -100,7 +108,9 @@ def process_replay(
             array = [x if x is not None else NP_MASK_VALUE for x in frame_data[key]]
             sample[key] = np.array(array, dtype=dtype)
 
-    sample["replay_uuid"] = np.array([replay_uuid] * len(frame_data["frame"]), dtype=np.int32)
+    sample["replay_uuid"] = np.array(
+        [replay_uuid] * len(frame_data["frame"]), dtype=np.int32
+    )
     return sample
 
 
@@ -167,20 +177,30 @@ def process_replays(
                 out=str(split_output_dir),
                 columns=MDS_DTYPE_STR_BY_COLUMN,
                 compression="zstd",
-                size_limit=1 << 31,  # Write 2GB shards, data is repetitive so compression is 10-20x
+                size_limit=1
+                << 31,  # Write 2GB shards, data is repetitive so compression is 10-20x
                 exist_ok=True,
             ) as out:
                 with mp.Pool(max_parallelism) as pool:
-                    samples = pool.imap_unordered(process_replay_partial, split_replay_paths)
-                    for sample in tqdm(samples, total=num_replays, desc=f"Processing {split} split"):
+                    samples = pool.imap_unordered(
+                        process_replay_partial, split_replay_paths
+                    )
+                    for sample in tqdm(
+                        samples, total=num_replays, desc=f"Processing {split} split"
+                    ):
                         if sample is not None:
                             out.write(sample)
                             actual += 1
-            logger.info(f"Wrote {actual} replays ({actual / num_replays:.2%}) to {split_output_dir}")
+            logger.info(
+                f"Wrote {actual} replays ({actual / num_replays:.2%}) to {split_output_dir}"
+            )
 
 
 def split_train_val_test(
-    input_paths: Tuple[Path, ...], train_split: float = 0.98, val_split: float = 0.01, test_split: float = 0.01
+    input_paths: Tuple[Path, ...],
+    train_split: float = 0.98,
+    val_split: float = 0.01,
+    test_split: float = 0.01,
 ) -> dict[str, Tuple[Path, ...]]:
     assert train_split + val_split + test_split == 1.0
     n = len(input_paths)
@@ -199,16 +219,40 @@ def validate_input(replay_dir: str) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Process Melee replay files and store frame data in MDS format.")
-    parser.add_argument("--replay_dir", required=True, help="Input directory containing .slp replay files")
-    parser.add_argument("--output_dir", required=True, help="Local or remote output directory for processed data")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
-    parser.add_argument("--max_replays", type=int, default=-1, help="Maximum number of replays to process")
+    parser = argparse.ArgumentParser(
+        description="Process Melee replay files and store frame data in MDS format."
+    )
     parser.add_argument(
-        "--max_parallelism", type=int, default=None, help="Maximum number of workers to process replays in parallel"
+        "--replay_dir",
+        required=True,
+        help="Input directory containing .slp replay files",
+    )
+    parser.add_argument(
+        "--output_dir",
+        required=True,
+        help="Local or remote output directory for processed data",
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed for reproducibility"
+    )
+    parser.add_argument(
+        "--max_replays",
+        type=int,
+        default=-1,
+        help="Maximum number of replays to process",
+    )
+    parser.add_argument(
+        "--max_parallelism",
+        type=int,
+        default=None,
+        help="Maximum number of workers to process replays in parallel",
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    parser.add_argument("--disable_check_damage", action="store_true", help="Disable damage check in replays")
+    parser.add_argument(
+        "--disable_check_damage",
+        action="store_true",
+        help="Disable damage check in replays",
+    )
     args = parser.parse_args()
 
     setup_logger(output_dir=f"logs")
