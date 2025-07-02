@@ -17,13 +17,21 @@ class DummyModel(torch.nn.Module):
         return x
 
 
-def get_frame_data_from_gamestate(gamestate: melee.GameState | None = None, rank: int = 0) -> TensorDict:
+def get_frame_data_from_gamestate(
+    gamestate: melee.GameState | None = None, rank: int = 0
+) -> TensorDict:
     hidden_dim: int = 64  # Size of the hidden dimension
     device = "cpu"
     return TensorDict(
         {
             input_field: torch.full((hidden_dim,), rank, device=device)
-            for input_field in ("gamestate", "ego_char", "ego_action", "opponent_char", "opponent_action")
+            for input_field in (
+                "gamestate",
+                "ego_char",
+                "ego_action",
+                "opponent_char",
+                "opponent_action",
+            )
         },
         batch_size=[],
         device=device,
@@ -102,7 +110,10 @@ def gpu_worker(
     # Initialize the context window
     context_window = torch.stack(
         [
-            torch.stack([get_frame_data_from_gamestate() for _ in range(context_window_size)], dim=0)
+            torch.stack(
+                [get_frame_data_from_gamestate() for _ in range(context_window_size)],
+                dim=0,
+            )
             for _ in range(num_workers)
         ],
         dim=0,
@@ -124,7 +135,9 @@ def gpu_worker(
 
         t0 = time.perf_counter()
         # Read data from shared_tensor
-        batch_data: torch.Tensor = shared_input.clone().to(device)  # Shape: [num_workers, hidden_dim]
+        batch_data: torch.Tensor = shared_input.clone().to(
+            device
+        )  # Shape: [num_workers, hidden_dim]
         print(f"batch gamestate: {batch_data['gamestate']}")
 
         # Update the context window by rolling and adding new data
@@ -168,7 +181,9 @@ def main() -> None:
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Initialize shared tensors in shared memory
-    shared_input: TensorDict = torch.stack([get_frame_data_from_gamestate() for _ in range(num_workers)], dim=0)
+    shared_input: TensorDict = torch.stack(
+        [get_frame_data_from_gamestate() for _ in range(num_workers)], dim=0
+    )
     shared_input.share_memory_()
     print(f"shared_input: {shared_input}")
 

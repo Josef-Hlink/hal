@@ -27,11 +27,19 @@ def multi_token(frames: tuple[int, ...]) -> TargetConfig:
 
     return TargetConfig(
         transformation_by_target={
-            f"{k}_{frame}": transformation_by_target[k] for k in transformation_by_target for frame in frames
+            f"{k}_{frame}": transformation_by_target[k]
+            for k in transformation_by_target
+            for frame in frames
         },
-        frame_offsets_by_target={f"{k}_{frame}": frame - 1 for k in transformation_by_target for frame in frames},
+        frame_offsets_by_target={
+            f"{k}_{frame}": frame - 1
+            for k in transformation_by_target
+            for frame in frames
+        },
         target_shapes_by_head={
-            f"{k}_{frame}": target_shapes_by_head[k] for k in target_shapes_by_head for frame in frames
+            f"{k}_{frame}": target_shapes_by_head[k]
+            for k in target_shapes_by_head
+            for frame in frames
         },
         multi_token_heads=frames,
     )
@@ -45,12 +53,16 @@ def multi_token_value(frames: tuple[int, ...]) -> TargetConfig:
         "shoulder": encode_shoulder_one_hot,
     }
     transformation_by_target = {
-        f"{k}_{frame}": transformation_by_target[k] for k in transformation_by_target for frame in frames
+        f"{k}_{frame}": transformation_by_target[k]
+        for k in transformation_by_target
+        for frame in frames
     }
     transformation_by_target["value"] = get_returns
 
     modalities = ("main_stick", "c_stick", "buttons", "shoulder")
-    frame_offsets_by_target = {f"{k}_{frame}": frame - 1 for k in modalities for frame in frames}
+    frame_offsets_by_target = {
+        f"{k}_{frame}": frame - 1 for k in modalities for frame in frames
+    }
     frame_offsets_by_target["value"] = 1
 
     target_shapes_by_head = {
@@ -60,7 +72,9 @@ def multi_token_value(frames: tuple[int, ...]) -> TargetConfig:
         "shoulder": (len(SHOULDER_CLUSTER_CENTERS_V2),),
     }
     target_shapes_by_head = {
-        f"{k}_{frame}": target_shapes_by_head[k] for k in target_shapes_by_head for frame in frames
+        f"{k}_{frame}": target_shapes_by_head[k]
+        for k in target_shapes_by_head
+        for frame in frames
     }
     target_shapes_by_head["value"] = (1,)
 

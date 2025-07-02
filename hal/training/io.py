@@ -57,7 +57,9 @@ def get_exp_name(config) -> str:
 
 
 def get_artifact_dir(*args) -> Path:
-    artifact_dir = get_git_repo_root().joinpath(ARTIFACT_DIR_ROOT, get_path_friendly_datetime(), *args)
+    artifact_dir = get_git_repo_root().joinpath(
+        ARTIFACT_DIR_ROOT, get_path_friendly_datetime(), *args
+    )
     Path.mkdir(artifact_dir, parents=True, exist_ok=True)
     return artifact_dir
 
@@ -70,13 +72,17 @@ def get_log_dir(*args) -> Path:
 
 def get_default_dolphin_path() -> str:
     dolphin_path = os.environ.get("DEFAULT_DOLPHIN_PATH", None)
-    assert dolphin_path is not None, "DEFAULT_DOLPHIN_PATH environment variable must be set"
+    assert dolphin_path is not None, (
+        "DEFAULT_DOLPHIN_PATH environment variable must be set"
+    )
     return dolphin_path
 
 
 def get_default_melee_iso_path() -> str:
     melee_path = os.environ.get("DEFAULT_MELEE_ISO_PATH", None)
-    assert melee_path is not None, "DEFAULT_MELEE_ISO_PATH environment variable must be set"
+    assert melee_path is not None, (
+        "DEFAULT_MELEE_ISO_PATH environment variable must be set"
+    )
     return melee_path
 
 
@@ -180,8 +186,12 @@ class Checkpoint:
         with ckpt.open("wb") as f:
             torch.save(self.model.state_dict(), f)
 
-        save_dataloader_state(train_loader, self.artifact_dir / (TRAIN_LOADER_STATE_FILENAME % idx))
-        save_dataloader_state(val_loader, self.artifact_dir / (VAL_LOADER_STATE_FILENAME % idx))
+        save_dataloader_state(
+            train_loader, self.artifact_dir / (TRAIN_LOADER_STATE_FILENAME % idx)
+        )
+        save_dataloader_state(
+            val_loader, self.artifact_dir / (VAL_LOADER_STATE_FILENAME % idx)
+        )
 
         old_ckpts = sorted(self.artifact_dir.glob(MODEL_FILE_MATCH), key=str)
         for ckpt_file in old_ckpts[: -self.keep_ckpts]:
@@ -205,7 +215,9 @@ class WandbConfig:
     model: torch.nn.Module
 
     @classmethod
-    def create(cls, model: torch.nn.Module, train_config: BaseConfig) -> Optional["WandbConfig"]:
+    def create(
+        cls, model: torch.nn.Module, train_config: BaseConfig
+    ) -> Optional["WandbConfig"]:
         if not os.getenv("WANDB_API_KEY"):
             logger.info("W&B run not initiated because WANDB_API_KEY not set.")
             return None
@@ -220,7 +232,9 @@ class WandbConfig:
         name_path: Path = model.log_dir
         name = name_path.stem
 
-        return cls(project="hal", train_config=config, tags=tags, name=name, model=model)
+        return cls(
+            project="hal", train_config=config, tags=tags, name=name, model=model
+        )
 
 
 class DummyWriter:
@@ -230,7 +244,9 @@ class DummyWriter:
     def watch(self, model: torch.nn.Module, **kwargs) -> None:
         """Hooks into torch model to collect gradients and the topology."""
 
-    def log(self, summary_dict: TensorDict | Dict[str, Any], step: int, commit: bool = True) -> None:
+    def log(
+        self, summary_dict: TensorDict | Dict[str, Any], step: int, commit: bool = True
+    ) -> None:
         """Add on event to the event file."""
 
     def close(self) -> None:
@@ -259,10 +275,14 @@ class Writer:
                 name=wandb_config.name,
             )
             train_config = wandb_config.train_config
-            log_freq = train_config["report_len"] // (train_config["local_batch_size"] * train_config["n_gpus"])
+            log_freq = train_config["report_len"] // (
+                train_config["local_batch_size"] * train_config["n_gpus"]
+            )
             wandb.watch(wandb_config.model, log="all", log_freq=log_freq)
 
-    def log(self, summary_dict: TensorDict | Dict[str, Any], step: int, commit: bool = True) -> None:
+    def log(
+        self, summary_dict: TensorDict | Dict[str, Any], step: int, commit: bool = True
+    ) -> None:
         """Add on event to the event file."""
         wandb.log(summary_dict, step=step, commit=commit)
 

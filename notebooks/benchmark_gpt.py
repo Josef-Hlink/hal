@@ -9,9 +9,7 @@ from hal.training.io import load_model_from_artifact_dir
 
 # %%
 N = 100
-model_dir = (
-    "/opt/projects/hal2/runs/2024-10-22_15-31-30/arch@GPTv1-12-4-dropout_local_batch_size@64_n_samples@16777216"
-)
+model_dir = "/opt/projects/hal2/runs/2024-10-22_15-31-30/arch@GPTv1-12-4-dropout_local_batch_size@64_n_samples@16777216"
 model, train_config = load_model_from_artifact_dir(Path(model_dir))
 model.eval()
 

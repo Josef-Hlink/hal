@@ -53,7 +53,9 @@ def main(train_config: TrainConfig) -> None:
     torch.manual_seed(seed)
 
     train_loader, val_loader = get_dataloaders(train_config)
-    trainer = SimpleTrainer(config=train_config, train_loader=train_loader, val_loader=val_loader)
+    trainer = SimpleTrainer(
+        config=train_config, train_loader=train_loader, val_loader=val_loader
+    )
     trainer.train_loop(train_loader, val_loader)
 
 

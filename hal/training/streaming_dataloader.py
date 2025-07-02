@@ -32,9 +32,13 @@ def pre_download_streams(config: TrainConfig) -> None:
             if stream.remote is not None:
                 for split in ["train", "val"]:
                     if Path(stream.local).exists():
-                        log_if_master(f"Rank {rank}: {split} split already exists in {stream.local}, skipping")
+                        log_if_master(
+                            f"Rank {rank}: {split} split already exists in {stream.local}, skipping"
+                        )
                         continue
-                    log_if_master(f"Rank {rank}: Pre-downloading {split} split from {stream.remote}...")
+                    log_if_master(
+                        f"Rank {rank}: Pre-downloading {split} split from {stream.remote}..."
+                    )
                     temp_stream = Stream(
                         remote=stream.remote,
                         local=stream.local,
@@ -56,7 +60,9 @@ def pre_download_streams(config: TrainConfig) -> None:
                             break
 
 
-def get_dataloaders(config: TrainConfig) -> Tuple[StreamingDataLoader, StreamingDataLoader]:
+def get_dataloaders(
+    config: TrainConfig,
+) -> Tuple[StreamingDataLoader, StreamingDataLoader]:
     batch_size = config.local_batch_size
 
     if is_master():
@@ -94,8 +100,12 @@ def get_dataloaders(config: TrainConfig) -> Tuple[StreamingDataLoader, Streaming
     else:
         local_dir = config.data.data_dir
 
-    logger.info(f"rank {get_device_id()}: {tuple(train_stream.local for train_stream in train_streams)}")
-    logger.info(f"rank {get_device_id()}: {tuple(val_stream.local for val_stream in val_streams)}")
+    logger.info(
+        f"rank {get_device_id()}: {tuple(train_stream.local for train_stream in train_streams)}"
+    )
+    logger.info(
+        f"rank {get_device_id()}: {tuple(val_stream.local for val_stream in val_streams)}"
+    )
 
     train_dataset = HALStreamingDataset(
         streams=train_streams,

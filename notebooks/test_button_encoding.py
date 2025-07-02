@@ -197,7 +197,12 @@ for i, (x_pos, y_pos) in enumerate(zip(main_x, main_y)):
     # Only label every 5th point to avoid overcrowding
     if i % 5 == 0:
         ax1.annotate(
-            str(frame_range[i]), (x_pos, y_pos), textcoords="offset points", xytext=(0, 5), ha="center", fontsize=8
+            str(frame_range[i]),
+            (x_pos, y_pos),
+            textcoords="offset points",
+            xytext=(0, 5),
+            ha="center",
+            fontsize=8,
         )
 
 # Draw the unit circle with radius 0.5 centered at (0.5, 0.5)
@@ -254,7 +259,10 @@ ax2.set_yticklabels([str(frame_range[i]) for i in y_ticks])
 
 # Set x-ticks to show button names
 ax2.set_xticks(np.arange(len(button_keys)))
-ax2.set_xticklabels([key.replace("button_", "").replace("_shoulder", "") for key in button_keys], rotation=45)
+ax2.set_xticklabels(
+    [key.replace("button_", "").replace("_shoulder", "") for key in button_keys],
+    rotation=45,
+)
 
 # Add a colorbar for the heatmap
 cbar2 = plt.colorbar(im, ax=ax2)
@@ -274,7 +282,9 @@ for frame in frame_range:
     for key in button_names_by_key.keys():
         field_name = f"p2_{key}"
         value = x[field_name][frame]
-        if (isinstance(value, float) and value > 0.1) or (isinstance(value, (int, np.integer)) and value > 0):
+        if (isinstance(value, float) and value > 0.1) or (
+            isinstance(value, (int, np.integer)) and value > 0
+        ):
             button_presses.append(
                 f"{button_names_by_key[key]}:{value:.1f}"
                 if isinstance(value, float)
@@ -346,11 +356,21 @@ from hal.preprocess.transformations import encode_original_shoulder_one_hot_fine
 from hal.preprocess.transformations import encode_shoulder_one_hot_coarse
 
 encode_original_shoulder_one_hot_finer(
-    TensorDict({"p1_l_shoulder": torch.tensor([0.0, 0.34, 0.55]), "p1_r_shoulder": torch.tensor([0.4, 0.7, 0.98])}),
+    TensorDict(
+        {
+            "p1_l_shoulder": torch.tensor([0.0, 0.34, 0.55]),
+            "p1_r_shoulder": torch.tensor([0.4, 0.7, 0.98]),
+        }
+    ),
     "p1",
 )
 encode_shoulder_one_hot_coarse(
-    TensorDict({"p1_l_shoulder": torch.tensor([0.0, 0.34, 0.55]), "p1_r_shoulder": torch.tensor([0.4, 0.7, 0.98])}),
+    TensorDict(
+        {
+            "p1_l_shoulder": torch.tensor([0.0, 0.34, 0.55]),
+            "p1_r_shoulder": torch.tensor([0.4, 0.7, 0.98]),
+        }
+    ),
     "p1",
 ).shape
 
@@ -447,7 +467,7 @@ def animate(i):
     stick_point.set_offsets([[main_x, main_y]])
 
     # Update frame text
-    frame_text.set_text(f'Frame: {x["frame"][frame]}')
+    frame_text.set_text(f"Frame: {x['frame'][frame]}")
 
     # Update button states - only digital buttons
     for j, key in enumerate(button_keys):
@@ -461,7 +481,9 @@ def animate(i):
 
 
 # Create animation
-ani = animation.FuncAnimation(fig, animate, frames=len(frame_range), init_func=init, blit=True, interval=100)
+ani = animation.FuncAnimation(
+    fig, animate, frames=len(frame_range), init_func=init, blit=True, interval=100
+)
 
 plt.tight_layout()
 

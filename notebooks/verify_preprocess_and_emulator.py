@@ -13,7 +13,9 @@ from hal.training.models.registry import Arch
 
 # %%
 # We want to load a .slp file from closed loop eval and run it back through data preprocessing pipeline & model forward pass to verify that the stack is working correctly
-run = "2024-12-09_18-53-21/arch@GPTv1-12-4-dropout_local_batch_size@256_n_samples@4194304"
+run = (
+    "2024-12-09_18-53-21/arch@GPTv1-12-4-dropout_local_batch_size@256_n_samples@4194304"
+)
 artifact_dir = Path(f"/opt/projects/hal2/runs/{run}")
 replay_path = f"/opt/projects/hal2/replays/{run}/Game_20241215T162052.slp"
 

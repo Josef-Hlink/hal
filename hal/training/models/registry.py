@@ -15,9 +15,14 @@ class Arch:
         if name in cls.ARCH:
             model_class, model_params = cls.ARCH[name]
             return model_class(**model_params, **kwargs)
-        raise NotImplementedError(f"Architecture {name} not found." f"Valid architectures: {sorted(cls.ARCH.keys())}.")
+        raise NotImplementedError(
+            f"Architecture {name} not found."
+            f"Valid architectures: {sorted(cls.ARCH.keys())}."
+        )
 
     @classmethod
-    def register(cls, name: str, make_net: Callable[..., torch.nn.Module], **kwargs) -> Callable[..., torch.nn.Module]:
+    def register(
+        cls, name: str, make_net: Callable[..., torch.nn.Module], **kwargs
+    ) -> Callable[..., torch.nn.Module]:
         cls.ARCH[name] = make_net, kwargs
         return make_net

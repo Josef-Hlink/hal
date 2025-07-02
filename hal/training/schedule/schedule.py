@@ -39,7 +39,12 @@ class SchedulePieceWiseCos(Schedule):
                 break
             prev_stage = stage
 
-        lam = 0.5 * (1 + np.cos(np.pi * (progress - prev_stage.end) / (curr_stage.end - prev_stage.end)))
+        lam = 0.5 * (
+            1
+            + np.cos(
+                np.pi * (progress - prev_stage.end) / (curr_stage.end - prev_stage.end)
+            )
+        )
         return lam * prev_stage.scalar + (1 - lam) * curr_stage.scalar
 
 

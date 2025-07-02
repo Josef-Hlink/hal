@@ -25,13 +25,16 @@ class ReplayFilter:
 
     replay_uuid: Optional[str] = None
     stage: Optional[str] = attr.ib(
-        default=None, validator=attr.validators.optional(attr.validators.in_(INCLUDED_STAGES))
+        default=None,
+        validator=attr.validators.optional(attr.validators.in_(INCLUDED_STAGES)),
     )
     ego_character: Optional[str] = attr.ib(
-        default=None, validator=attr.validators.optional(attr.validators.in_(INCLUDED_CHARACTERS))
+        default=None,
+        validator=attr.validators.optional(attr.validators.in_(INCLUDED_CHARACTERS)),
     )
     opponent_character: Optional[str] = attr.ib(
-        default=None, validator=attr.validators.optional(attr.validators.in_(INCLUDED_CHARACTERS))
+        default=None,
+        validator=attr.validators.optional(attr.validators.in_(INCLUDED_CHARACTERS)),
     )
 
 
@@ -164,7 +167,9 @@ def create_parser_for_attrs_class(
                     arg_name,
                     action="store_true",
                     help=field.metadata.get("help", ""),
-                    default=field.default if field.default is not attr.NOTHING else False,
+                    default=field.default
+                    if field.default is not attr.NOTHING
+                    else False,
                     required=field.default is attr.NOTHING and arg_name != "--debug",
                 )
             else:
@@ -172,14 +177,18 @@ def create_parser_for_attrs_class(
                     arg_name,
                     type=field.type,
                     help=field.metadata.get("help", ""),
-                    default=field.default if field.default is not attr.NOTHING else None,
+                    default=field.default
+                    if field.default is not attr.NOTHING
+                    else None,
                     required=field.default is attr.NOTHING,
                 )
 
     return parser
 
 
-def parse_args_to_attrs_instance(cls: Type[Any], args: argparse.Namespace, prefix: str = "") -> Any:
+def parse_args_to_attrs_instance(
+    cls: Type[Any], args: argparse.Namespace, prefix: str = ""
+) -> Any:
     kwargs: Dict[str, Any] = {}
 
     for field in attr.fields(cls):
@@ -187,7 +196,9 @@ def parse_args_to_attrs_instance(cls: Type[Any], args: argparse.Namespace, prefi
 
         if attr.has(field.type):
             # If the field is another attrs class, recurse
-            kwargs[field.name] = parse_args_to_attrs_instance(field.type, args, f"{arg_name}.")
+            kwargs[field.name] = parse_args_to_attrs_instance(
+                field.type, args, f"{arg_name}."
+            )
         else:
             # Otherwise, get the value from args
             value = getattr(args, arg_name)

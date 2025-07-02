@@ -47,7 +47,16 @@ def main() -> None:
 
 def generate_random_episode(ep_len: int = 10800):
     int_fields = ("stock_1", "stock_2")
-    float_fields = ("pos_x_1", "pos_y_1", "percent_1", "shield_1", "pos_x_2", "pos_y_2", "percent_2", "shield_2")
+    float_fields = (
+        "pos_x_1",
+        "pos_y_1",
+        "percent_1",
+        "shield_1",
+        "pos_x_2",
+        "pos_y_2",
+        "percent_2",
+        "shield_2",
+    )
     dummy_episode = {}
 
     id = uuid.uuid4().int >> 64

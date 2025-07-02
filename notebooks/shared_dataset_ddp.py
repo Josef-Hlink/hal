@@ -23,7 +23,11 @@ class NumpySerializedList:
             buffer = pickle.dumps(data, protocol=-1)
             return np.frombuffer(buffer, dtype=np.uint8)
 
-        print("Serializing {} elements to byte tensors and concatenating them all ...".format(len(lst)))
+        print(
+            "Serializing {} elements to byte tensors and concatenating them all ...".format(
+                len(lst)
+            )
+        )
         self._lst = [_serialize(x) for x in lst]
         self._addr = np.asarray([len(x) for x in self._lst], dtype=np.int64)
         self._addr = np.cumsum(self._addr)
@@ -72,7 +76,12 @@ def get_rank():
 
 def run(rank, world_size) -> None:
     # Initialize the process group
-    dist.init_process_group(backend="gloo", init_method="tcp://127.0.0.1:29500", world_size=world_size, rank=rank)
+    dist.init_process_group(
+        backend="gloo",
+        init_method="tcp://127.0.0.1:29500",
+        world_size=world_size,
+        rank=rank,
+    )
     print(f"Rank {rank} initialized.")
 
     if rank == 0:
@@ -81,7 +90,9 @@ def run(rank, world_size) -> None:
         shared_dataset = TorchSerializedList(dataset_list)
         # Get the handles
         print("Dumping handles")
-        handle = mproc.reduction.ForkingPickler.dumps((shared_dataset._addr, shared_dataset._lst))
+        handle = mproc.reduction.ForkingPickler.dumps(
+            (shared_dataset._addr, shared_dataset._lst)
+        )
     else:
         handle = None
 
@@ -93,7 +104,9 @@ def run(rank, world_size) -> None:
     if rank != 0:
         print("Deserializing dataset")
         shared_dataset = TorchSerializedList([])
-        shared_dataset._addr, shared_dataset._lst = mproc.reduction.ForkingPickler.loads(handle)
+        shared_dataset._addr, shared_dataset._lst = (
+            mproc.reduction.ForkingPickler.loads(handle)
+        )
         print(f"Rank {rank} obtained shared dataset.")
 
     # Create Dataset
@@ -123,14 +136,18 @@ def main() -> None:
 class SharedDataset(Dataset):
     def __init__(self, shared_data) -> None:
         self.data = shared_data
-        print(f"Process {os.getpid()} initializing dataset with data id {id(self.data)}")
+        print(
+            f"Process {os.getpid()} initializing dataset with data id {id(self.data)}"
+        )
 
     def __len__(self) -> int:
         return len(self.data)
 
     def __getitem__(self, idx):
         # Print to verify that DataLoader workers share the data
-        print(f"Process {os.getpid()} accessing data idx {idx} with data id {id(self.data)}")
+        print(
+            f"Process {os.getpid()} accessing data idx {idx} with data id {id(self.data)}"
+        )
         return self.data[idx]
 
 

@@ -34,7 +34,9 @@ BOT_PLAYER = "p1"
 
 def load_model(artifact_dir: str, device: torch.device) -> torch.nn.Module:
     torch.set_float32_matmul_precision("high")
-    model, _ = load_model_from_artifact_dir(Path(artifact_dir), device=device, stats_path_override=STATS_PATH)
+    model, _ = load_model_from_artifact_dir(
+        Path(artifact_dir), device=device, stats_path_override=STATS_PATH
+    )
     model.eval()
     model.to(device)
     return model
@@ -42,9 +44,15 @@ def load_model(artifact_dir: str, device: torch.device) -> torch.nn.Module:
 
 def play(artifact_dir: str, character: str):
     device: torch.device = torch.device(
-        "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
     )
-    train_config: Union[TrainConfig, ValueTrainerConfig] = load_config_from_artifact_dir(Path(artifact_dir))
+    train_config: Union[TrainConfig, ValueTrainerConfig] = (
+        load_config_from_artifact_dir(Path(artifact_dir))
+    )
     train_config = override_stats_path(train_config, STATS_PATH)
     preprocessor = Preprocessor(data_config=train_config.data)
     seq_len = preprocessor.seq_len
@@ -56,11 +64,15 @@ def play(artifact_dir: str, character: str):
     ego_character_enum = Character[character.upper()]
     logger.info(f"Character: {ego_character_enum}")
 
-    mock_framedata_L: TensorDict = mock_framedata_as_tensordict(preprocessor.trajectory_sampling_len)
+    mock_framedata_L: TensorDict = mock_framedata_as_tensordict(
+        preprocessor.trajectory_sampling_len
+    )
     context_window_BL = preprocessor.preprocess_inputs(mock_framedata_L, BOT_PLAYER)
     context_window_BL = preprocessor.offset_inputs(context_window_BL).unsqueeze(0)
     context_window_BL = context_window_BL.to(device)
-    logger.info(f"Context window shape: {context_window_BL.shape}, device: {context_window_BL.device}")
+    logger.info(
+        f"Context window shape: {context_window_BL.shape}, device: {context_window_BL.device}"
+    )
 
     # Warmup CUDA graphs with dummy inputs
     logger.info("Compiling model...")
@@ -69,13 +81,21 @@ def play(artifact_dir: str, character: str):
         model(context_window_BL)
     logger.info("Warmup step finished")
 
-    console_kwargs = get_gui_console_kwargs(Path(MAC_EMULATOR_PATH), Path(MAC_REPLAY_DIR))
+    console_kwargs = get_gui_console_kwargs(
+        Path(MAC_EMULATOR_PATH), Path(MAC_REPLAY_DIR)
+    )
     logger.info(f"Console kwargs: {console_kwargs}")
     console = melee.Console(**console_kwargs)
-    ego_controller = melee.Controller(console=console, port=1, type=melee.ControllerType.STANDARD)
+    ego_controller = melee.Controller(
+        console=console, port=1, type=melee.ControllerType.STANDARD
+    )
     # opponent_controller = melee.Controller(console=console, port=2, type=melee.ControllerType.GCN_ADAPTER)
-    opponent_controller = melee.Controller(console=console, port=2, type=melee.ControllerType.STANDARD)
-    console.run(iso_path=MAC_CISO_PATH)  # Do not pass dolphin_user_path to avoid overwriting init kwargs
+    opponent_controller = melee.Controller(
+        console=console, port=2, type=melee.ControllerType.STANDARD
+    )
+    console.run(
+        iso_path=MAC_CISO_PATH
+    )  # Do not pass dolphin_user_path to avoid overwriting init kwargs
     # Connect to the console
     logger.debug("Connecting to console...")
     if not console.connect():
@@ -117,7 +137,10 @@ def play(artifact_dir: str, character: str):
 
     # Wrap console manager inside a thread for timeouts
     # Important that console manager context goes second to gracefully handle keyboard interrupts, timeouts, and all other exceptions
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor, console_manager(console=console):
+    with (
+        concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor,
+        console_manager(console=console),
+    ):
         i = 0
         logger.debug("Starting episode")
         while True:
@@ -134,9 +157,16 @@ def play(artifact_dir: str, character: str):
                 continue
 
             if console.processingtime * 1000 > 1400:
-                logger.debug("Last frame took " + str(console.processingtime * 1000) + "ms to process.")
+                logger.debug(
+                    "Last frame took "
+                    + str(console.processingtime * 1000)
+                    + "ms to process."
+                )
 
-            if gamestate.menu_state not in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
+            if gamestate.menu_state not in [
+                melee.Menu.IN_GAME,
+                melee.Menu.SUDDEN_DEATH,
+            ]:
                 menu_helper.select_character_and_stage(gamestate)
                 i = 0
             else:

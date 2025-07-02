@@ -38,7 +38,11 @@ if __name__ == "__main__":
 
     for i, arch in enumerate(archs):
         # Only use controller preprocessing fns with controller architectures
-        valid_preprocess_fns = [fn for fn in preprocessing_fns if ("Controller" in arch) == ("controller" in fn)]
+        valid_preprocess_fns = [
+            fn
+            for fn in preprocessing_fns
+            if ("Controller" in arch) == ("controller" in fn)
+        ]
 
         for j, preprocess_fn in enumerate(valid_preprocess_fns):
             pane_name = f"{arch}-{preprocess_fn}"

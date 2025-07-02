@@ -19,9 +19,13 @@ class GPUWorker:
         device = "cuda" if in_cuda else "cpu"
         td = TensorDict(
             {
-                "embeddings": torch.empty(self.batch_size, self.feature_dim, device=device),
+                "embeddings": torch.empty(
+                    self.batch_size, self.feature_dim, device=device
+                ),
                 "scores": torch.empty(self.batch_size, device=device),
-                "processed": torch.zeros(self.batch_size, dtype=torch.bool, device=device),
+                "processed": torch.zeros(
+                    self.batch_size, dtype=torch.bool, device=device
+                ),
             },
             batch_size=[self.batch_size],
         )
@@ -57,12 +61,18 @@ class CPUWorker:
         self.end_idx = (worker_id + 1) * slice_size
 
     def process_slice(self, output_td: TensorDict, result_queue: Queue) -> None:
-        slice_dict = {"worker_id": self.worker_id, "start_idx": self.start_idx, "end_idx": self.end_idx}
+        slice_dict = {
+            "worker_id": self.worker_id,
+            "start_idx": self.start_idx,
+            "end_idx": self.end_idx,
+        }
 
         try:
             if output_td["embeddings"].device.type == "cuda":
                 # Pattern 1: Each CPU worker needs to copy from CUDA
-                embeddings = output_td["embeddings"][self.start_idx : self.end_idx].cpu()
+                embeddings = output_td["embeddings"][
+                    self.start_idx : self.end_idx
+                ].cpu()
                 scores = output_td["scores"][self.start_idx : self.end_idx].cpu()
             else:
                 # Pattern 2: Direct access to CPU memory
@@ -79,7 +89,9 @@ class CPUWorker:
         result_queue.put(slice_dict)
 
 
-def benchmark_patterns(num_workers: int = 4, batch_size: int = 1024, feature_dim: int = 256) -> None:
+def benchmark_patterns(
+    num_workers: int = 4, batch_size: int = 1024, feature_dim: int = 256
+) -> None:
     """Compare CUDA shared memory vs CPU shared memory patterns"""
 
     # Simple dummy model
@@ -106,7 +118,10 @@ def benchmark_patterns(num_workers: int = 4, batch_size: int = 1024, feature_dim
         # Start CPU workers
         start_time = time.perf_counter()
         for i in range(num_workers):
-            w = Process(target=CPUWorker(i, slice_size).process_slice, args=(output_td, result_queue))
+            w = Process(
+                target=CPUWorker(i, slice_size).process_slice,
+                args=(output_td, result_queue),
+            )
             w.start()
             cpu_workers.append(w)
 
@@ -126,13 +141,13 @@ def benchmark_patterns(num_workers: int = 4, batch_size: int = 1024, feature_dim
     # Compare patterns
     print("\nPattern 1: CUDA shared memory")
     gpu_time1, cpu_time1, _ = run_pattern(in_cuda=True)
-    print(f"GPU time: {gpu_time1*1000:.2f}ms")
-    print(f"CPU workers time: {cpu_time1*1000:.2f}ms")
+    print(f"GPU time: {gpu_time1 * 1000:.2f}ms")
+    print(f"CPU workers time: {cpu_time1 * 1000:.2f}ms")
 
     print("\nPattern 2: CPU shared memory")
     gpu_time2, cpu_time2, _ = run_pattern(in_cuda=False)
-    print(f"GPU time: {gpu_time2*1000:.2f}ms")
-    print(f"CPU workers time: {cpu_time2*1000:.2f}ms")
+    print(f"GPU time: {gpu_time2 * 1000:.2f}ms")
+    print(f"CPU workers time: {cpu_time2 * 1000:.2f}ms")
 
 
 if __name__ == "__main__":

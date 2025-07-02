@@ -33,7 +33,8 @@ INCLUDED_STAGES: Tuple[str, ...] = (
     "YOSHIS_STORY",
 )
 IDX_BY_STAGE: Dict[Stage, int] = {
-    stage: i for i, stage in enumerate(stage for stage in Stage if stage.name in INCLUDED_STAGES)
+    stage: i
+    for i, stage in enumerate(stage for stage in Stage if stage.name in INCLUDED_STAGES)
 }
 IDX_BY_STAGE_STR: Dict[str, int] = {stage.name: i for stage, i in IDX_BY_STAGE.items()}
 STAGE_BY_IDX: Dict[int, str] = {i: stage.name for stage, i in IDX_BY_STAGE.items()}
@@ -68,10 +69,17 @@ INCLUDED_CHARACTERS: Tuple[str, ...] = (
     "ROY",
 )
 IDX_BY_CHARACTER: Dict[Character, int] = {
-    char: i for i, char in enumerate(char for char in Character if char.name in INCLUDED_CHARACTERS)
+    char: i
+    for i, char in enumerate(
+        char for char in Character if char.name in INCLUDED_CHARACTERS
+    )
 }
-IDX_BY_CHARACTER_STR: Dict[str, int] = {char.name: i for char, i in IDX_BY_CHARACTER.items()}
-CHARACTER_BY_IDX: Dict[int, str] = {i: char.name for char, i in IDX_BY_CHARACTER.items()}
+IDX_BY_CHARACTER_STR: Dict[str, int] = {
+    char.name: i for char, i in IDX_BY_CHARACTER.items()
+}
+CHARACTER_BY_IDX: Dict[int, str] = {
+    i: char.name for char, i in IDX_BY_CHARACTER.items()
+}
 
 IDX_BY_ACTION: Dict[Action, int] = {action: i for i, action in enumerate(Action)}
 ACTION_BY_IDX: Dict[int, str] = {i: action.name for action, i in IDX_BY_ACTION.items()}
@@ -167,7 +175,9 @@ TARGET_FEATURES_TO_ONE_HOT_ENCODE: Tuple[str, ...] = (
 SHOULDER_CLUSTER_CENTERS_V0: np.ndarray = np.array([0.0, 0.4, 1.0])
 SHOULDER_CLUSTER_CENTERS_V0.flags.writeable = False
 
-SHOULDER_CLUSTER_CENTERS_V1: np.ndarray = np.array([0.0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+SHOULDER_CLUSTER_CENTERS_V1: np.ndarray = np.array(
+    [0.0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+)
 SHOULDER_CLUSTER_CENTERS_V1.flags.writeable = False
 
 SHOULDER_CLUSTER_CENTERS_V2: np.ndarray = np.array([0.0, 0.35, 0.6, 0.85, 1.0])

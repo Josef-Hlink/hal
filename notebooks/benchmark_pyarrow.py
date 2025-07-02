@@ -33,10 +33,21 @@ def write_multiple_tables():
         pa.field(
             "address",
             pa.struct(
-                [pa.field("street", pa.string()), pa.field("city", pa.string()), pa.field("zipcode", pa.int32())]
+                [
+                    pa.field("street", pa.string()),
+                    pa.field("city", pa.string()),
+                    pa.field("zipcode", pa.int32()),
+                ]
             ),
         ),
-        pa.field("contacts", pa.list_(pa.struct([pa.field("type", pa.string()), pa.field("value", pa.string())]))),
+        pa.field(
+            "contacts",
+            pa.list_(
+                pa.struct(
+                    [pa.field("type", pa.string()), pa.field("value", pa.string())]
+                )
+            ),
+        ),
     ]
 
     schema = pa.schema(fields)
@@ -54,10 +65,14 @@ def write_multiple_tables():
                 "name": ["Name" + str(i) for i in range(start, end)],
                 "age": [20 + (i % 30) for i in range(start, end)],
                 "address": [
-                    {"street": f"{i} Main St", "city": "City", "zipcode": 10000 + i} for i in range(start, end)
+                    {"street": f"{i} Main St", "city": "City", "zipcode": 10000 + i}
+                    for i in range(start, end)
                 ],
                 "contacts": [
-                    [{"type": "email", "value": f"name{i}@example.com"}, {"type": "phone", "value": f"555-{i:04d}"}]
+                    [
+                        {"type": "email", "value": f"name{i}@example.com"},
+                        {"type": "phone", "value": f"555-{i:04d}"},
+                    ]
                     for i in range(start, end)
                 ],
             }

@@ -4,14 +4,18 @@ from typing import Optional
 
 import numpy as np
 import numpy.ma as ma
-from constants import NP_MASK_VALUE
+from hal.constants import NP_MASK_VALUE
 from loguru import logger
 from streaming import StreamingDataset
 
 
-def calculate_statistics_for_mds(input_path: str, output_path: str, max_examples: Optional[int]) -> None:
+def calculate_statistics_for_mds(
+    input_path: str, output_path: str, max_examples: Optional[int]
+) -> None:
     """Calculate and save statistics for each feature to a JSON."""
-    dataset = StreamingDataset(local=input_path, remote=None, batch_size=1, shuffle=False)
+    dataset = StreamingDataset(
+        local=input_path, remote=None, batch_size=1, shuffle=False
+    )
     statistics = {}
 
     for i, example in enumerate(dataset):
@@ -31,7 +35,9 @@ def calculate_statistics_for_mds(input_path: str, output_path: str, max_examples
 
             numpy_array = ma.masked_greater_equal(field_data, NP_MASK_VALUE)
 
-            if numpy_array.dtype == object or not np.issubdtype(numpy_array.dtype, np.number):
+            if numpy_array.dtype == object or not np.issubdtype(
+                numpy_array.dtype, np.number
+            ):
                 statistics[field_name]["skipped"] += numpy_array.size
                 continue
 
@@ -61,7 +67,9 @@ def calculate_statistics_for_mds(input_path: str, output_path: str, max_examples
         del feature_stats["M2"]
 
         total = feature_stats["count"] + feature_stats["skipped"]
-        feature_stats["skipped_percentage"] = (feature_stats["skipped"] / total) * 100 if total > 0 else 0
+        feature_stats["skipped_percentage"] = (
+            (feature_stats["skipped"] / total) * 100 if total > 0 else 0
+        )
 
         for key, value in feature_stats.items():
             if isinstance(value, np.number):
@@ -81,7 +89,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_path", type=str, help="Path to the input dataset")
     parser.add_argument("--output_path", type=str, help="Path to the output JSON file")
-    parser.add_argument("--max_examples", type=int, default=None, help="Maximum number of examples to process")
+    parser.add_argument(
+        "--max_examples",
+        type=int,
+        default=None,
+        help="Maximum number of examples to process",
+    )
     args = parser.parse_args()
 
     calculate_statistics_for_mds(args.input_path, args.output_path, args.max_examples)

@@ -81,7 +81,9 @@ def extract_and_append_gamestate_inplace(
     """
     players = sorted(curr_gamestate.players.items())
     assert len(players) == 2, f"Expected 2 players, got {len(players)}"
-    assert curr_gamestate.stage.name in INCLUDED_STAGES, f"Stage {curr_gamestate.stage} not valid"
+    assert curr_gamestate.stage.name in INCLUDED_STAGES, (
+        f"Stage {curr_gamestate.stage} not valid"
+    )
 
     if replay_uuid is not None:
         # Duplicate replay_uuid across frames for preprocessing simplicity
@@ -92,7 +94,9 @@ def extract_and_append_gamestate_inplace(
 
     for i, (port, player_state) in enumerate(players, start=1):
         player_relative = f"p{i}"
-        assert player_state.character.name in INCLUDED_CHARACTERS, f"Character {player_state.character} not valid"
+        assert player_state.character.name in INCLUDED_CHARACTERS, (
+            f"Character {player_state.character} not valid"
+        )
 
         # Player / gamestate data
         player_data = extract_player_state(player_state)
@@ -111,9 +115,13 @@ def extract_and_append_gamestate_inplace(
             frame_data_by_field[f"{player_relative}_{feature_name}"].append(value)
 
     if next_gamestate is None:
-        extract_controller_inputs_inplace(frame_data_by_field=frame_data_by_field, gamestate=curr_gamestate)
+        extract_controller_inputs_inplace(
+            frame_data_by_field=frame_data_by_field, gamestate=curr_gamestate
+        )
     else:
-        extract_controller_inputs_inplace(frame_data_by_field=frame_data_by_field, gamestate=next_gamestate)
+        extract_controller_inputs_inplace(
+            frame_data_by_field=frame_data_by_field, gamestate=next_gamestate
+        )
 
     return frame_data_by_field
 
@@ -135,11 +143,23 @@ def extract_controller_inputs_inplace(
             frame_data_by_field[f"{player_name}_button_{button.lower()}"].append(
                 int(controller.button[getattr(melee.Button, f"BUTTON_{button}")])
             )
-        frame_data_by_field[f"{player_name}_main_stick_x"].append(float(controller.main_stick[0]))
-        frame_data_by_field[f"{player_name}_main_stick_y"].append(float(controller.main_stick[1]))
-        frame_data_by_field[f"{player_name}_c_stick_x"].append(float(controller.c_stick[0]))
-        frame_data_by_field[f"{player_name}_c_stick_y"].append(float(controller.c_stick[1]))
-        frame_data_by_field[f"{player_name}_l_shoulder"].append(float(controller.l_shoulder))
-        frame_data_by_field[f"{player_name}_r_shoulder"].append(float(controller.r_shoulder))
+        frame_data_by_field[f"{player_name}_main_stick_x"].append(
+            float(controller.main_stick[0])
+        )
+        frame_data_by_field[f"{player_name}_main_stick_y"].append(
+            float(controller.main_stick[1])
+        )
+        frame_data_by_field[f"{player_name}_c_stick_x"].append(
+            float(controller.c_stick[0])
+        )
+        frame_data_by_field[f"{player_name}_c_stick_y"].append(
+            float(controller.c_stick[1])
+        )
+        frame_data_by_field[f"{player_name}_l_shoulder"].append(
+            float(controller.l_shoulder)
+        )
+        frame_data_by_field[f"{player_name}_r_shoulder"].append(
+            float(controller.r_shoulder)
+        )
 
     return frame_data_by_field

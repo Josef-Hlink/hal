@@ -86,7 +86,9 @@ def maybe_wrap_model_distributed(
 ) -> Union[torch.nn.Module, torch.nn.parallel.DistributedDataParallel]:
     if not torch.distributed.is_initialized():
         return m.to(get_device())
-    return torch.nn.parallel.DistributedDataParallel(m.to(get_device_id()), device_ids=[get_device_id()])
+    return torch.nn.parallel.DistributedDataParallel(
+        m.to(get_device_id()), device_ids=[get_device_id()]
+    )
 
 
 def auto_distribute(f: Callable) -> Callable:
@@ -106,7 +108,9 @@ def auto_distribute(f: Callable) -> Callable:
         try:
             return f(*args)
         except Exception as e:
-            logger.error(f"Error in distributed training: {e}\n{traceback.format_exc()}")
+            logger.error(
+                f"Error in distributed training: {e}\n{traceback.format_exc()}"
+            )
         finally:
             logger.info("destroy_process_group")
             torch.distributed.destroy_process_group()
@@ -124,11 +128,17 @@ def wrap_multiprocessing(main_fn: Callable, config: BaseConfig, *args: Any) -> C
         cuda_setup()
         device_count = torch.cuda.device_count()
         n_gpus = config.n_gpus
-        assert n_gpus <= device_count, f"n_gpus={n_gpus}, only {device_count} gpus available!"
+        assert n_gpus <= device_count, (
+            f"n_gpus={n_gpus}, only {device_count} gpus available!"
+        )
         if n_gpus == 1:
             return main_fn(None, None, config, *args)
         torch.multiprocessing.spawn(
-            main_fn, args=(n_gpus, config, *args), nprocs=n_gpus, join=False, start_method="spawn"
+            main_fn,
+            args=(n_gpus, config, *args),
+            nprocs=n_gpus,
+            join=False,
+            start_method="spawn",
         )
 
     @functools.wraps(main_fn)

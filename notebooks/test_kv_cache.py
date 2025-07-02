@@ -1,4 +1,5 @@
 """Test KV cache implementation for transformer models."""
+
 import argparse
 import time
 from typing import List
@@ -19,7 +20,12 @@ from hal.training.models.gpt_multi_token import MultiTokenGPTConfig
 class KVCacheManager:
     """Helper class to manage KV caches for transformer blocks."""
 
-    def __init__(self, n_workers: int, model: GPTMultiTokenValueWithCache, device: torch.device | str) -> None:
+    def __init__(
+        self,
+        n_workers: int,
+        model: GPTMultiTokenValueWithCache,
+        device: torch.device | str,
+    ) -> None:
         """Initialize KV cache manager.
 
         Args:
@@ -160,7 +166,10 @@ def test_kv_cache_correctness(n_trials: int = 100) -> None:
             frame_input = inputs[:, i : i + 1]
             output, kv_caches = cached_model.forward_with_kv_cache(
                 frame_input,
-                kv_caches=[kv_cache_manager.get_kv(i) for i in range(cached_model.gpt_config.n_layer)],
+                kv_caches=[
+                    kv_cache_manager.get_kv(i)
+                    for i in range(cached_model.gpt_config.n_layer)
+                ],
                 return_kv=True,
             )
             kv_cache_manager.update_all(kv_caches)
@@ -177,16 +186,22 @@ def test_kv_cache_correctness(n_trials: int = 100) -> None:
         logger.info(f"Max difference for {key}: {diff:.3e}")
 
     if max_diff_forward < 1e-5 and max_diff_cache < 1e-5:
-        logger.success("All model variants and forward methods produce matching outputs!")
+        logger.success(
+            "All model variants and forward methods produce matching outputs!"
+        )
     else:
         if max_diff_forward >= 1e-5:
             logger.error("Base model and cached model outputs do not match!")
         if max_diff_cache >= 1e-5:
-            logger.error("Cached model forward and forward_with_kv_cache outputs do not match!")
+            logger.error(
+                "Cached model forward and forward_with_kv_cache outputs do not match!"
+            )
         # raise ValueError("KV cache implementation is incorrect")
 
     # Benchmark non-cached forward pass
-    logger.info(f"Benchmarking non-cached forward pass with {n_trials} forward passes...")
+    logger.info(
+        f"Benchmarking non-cached forward pass with {n_trials} forward passes..."
+    )
     torch.cuda.synchronize()
     start_time = time.perf_counter()
     for _ in range(n_trials):
@@ -194,7 +209,7 @@ def test_kv_cache_correctness(n_trials: int = 100) -> None:
             _ = base_model(inputs)
     torch.cuda.synchronize()
     no_cache_time = (time.perf_counter() - start_time) / n_trials
-    logger.info(f"Non-cached forward pass: {no_cache_time*1000:.2f}ms per sequence")
+    logger.info(f"Non-cached forward pass: {no_cache_time * 1000:.2f}ms per sequence")
 
     logger.info(f"Benchmarking cached forward pass with {n_trials} forward passes...")
     torch.cuda.synchronize()
@@ -205,15 +220,18 @@ def test_kv_cache_correctness(n_trials: int = 100) -> None:
         with torch.no_grad():
             _, kv_caches = cached_model.forward_with_kv_cache(
                 frame_input,
-                kv_caches=[kv_cache_manager.get_kv(i) for i in range(cached_model.gpt_config.n_layer)],
+                kv_caches=[
+                    kv_cache_manager.get_kv(i)
+                    for i in range(cached_model.gpt_config.n_layer)
+                ],
                 return_kv=True,
             )
             kv_cache_manager.update_all(kv_caches)
             kv_cache_manager.roll_cache()
     torch.cuda.synchronize()
     cache_time = (time.perf_counter() - start_time) / n_trials
-    logger.info(f"Cached forward pass: {cache_time*1000:.2f}ms per sequence")
-    logger.info(f"Speedup: {no_cache_time/cache_time:.2f}x")
+    logger.info(f"Cached forward pass: {cache_time * 1000:.2f}ms per sequence")
+    logger.info(f"Speedup: {no_cache_time / cache_time:.2f}x")
 
 
 if __name__ == "__main__":

@@ -51,7 +51,9 @@ def baseline_controller_fine_main_analog_shoulder() -> InputConfig:
             "shield_strength": invert_and_normalize,
             "position_x": standardize,
             "position_y": standardize,
-            "controller": partial(concat_controller_inputs, target_config=fine_main_analog_shoulder()),
+            "controller": partial(
+                concat_controller_inputs, target_config=fine_main_analog_shoulder()
+            ),
         },
         frame_offsets_by_input={
             "controller": -1,
@@ -72,5 +74,6 @@ def baseline_controller_fine_main_analog_shoulder() -> InputConfig:
 
 
 InputConfigRegistry.register(
-    "baseline_controller_fine_main_analog_shoulder", baseline_controller_fine_main_analog_shoulder()
+    "baseline_controller_fine_main_analog_shoulder",
+    baseline_controller_fine_main_analog_shoulder(),
 )

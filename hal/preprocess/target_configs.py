@@ -15,7 +15,9 @@ from hal.preprocess.transformations import concatenate_main_stick
 from hal.preprocess.transformations import encode_buttons_one_hot
 from hal.preprocess.transformations import encode_buttons_one_hot_early_release
 from hal.preprocess.transformations import encode_buttons_one_hot_no_shoulder
-from hal.preprocess.transformations import encode_buttons_one_hot_no_shoulder_early_release
+from hal.preprocess.transformations import (
+    encode_buttons_one_hot_no_shoulder_early_release,
+)
 from hal.preprocess.transformations import encode_c_stick_one_hot_coarse
 from hal.preprocess.transformations import encode_c_stick_one_hot_coarser
 from hal.preprocess.transformations import encode_c_stick_one_hot_fine
@@ -326,15 +328,19 @@ TargetConfigRegistry.register("baseline_fine", baseline_fine())
 TargetConfigRegistry.register("gaussian_coarse", gaussian_coarse())
 TargetConfigRegistry.register("gaussian_fine", gaussian_fine())
 TargetConfigRegistry.register("fine_main_analog_shoulder", fine_main_analog_shoulder())
-TargetConfigRegistry.register("fine_main_analog_shoulder_early_release", fine_main_analog_shoulder_early_release())
+TargetConfigRegistry.register(
+    "fine_main_analog_shoulder_early_release", fine_main_analog_shoulder_early_release()
+)
 TargetConfigRegistry.register("baseline_finer", baseline_finer())
 TargetConfigRegistry.register("fine_main_coarser_cstick", fine_main_coarser_cstick())
 TargetConfigRegistry.register("fine_orig_buttons", fine_orig_buttons())
 TargetConfigRegistry.register(
-    "fine_orig_buttons_one_hot_shoulder_one_hot", fine_orig_buttons_one_hot_shoulder_one_hot()
+    "fine_orig_buttons_one_hot_shoulder_one_hot",
+    fine_orig_buttons_one_hot_shoulder_one_hot(),
 )
 TargetConfigRegistry.register(
-    "separate_digital_shoulders_analog_shoulder_one_hot", separate_digital_shoulders_analog_shoulder_one_hot()
+    "separate_digital_shoulders_analog_shoulder_one_hot",
+    separate_digital_shoulders_analog_shoulder_one_hot(),
 )
 TargetConfigRegistry.register(
     "button_fine_main_coarser_cstick_medium_analog_shoulder",

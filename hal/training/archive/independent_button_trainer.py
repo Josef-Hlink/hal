@@ -45,7 +45,9 @@ class IndependentButtonTrainer(Trainer):
         pred = self.model(inputs)
         B, L, *_ = pred.shape
         # Important! Reshape the batch to 2D for proper CE loss calculation
-        loss_by_head = self.loss(pred.reshape(B * L, -1).squeeze(), targets.reshape(B * L, -1).squeeze())
+        loss_by_head = self.loss(
+            pred.reshape(B * L, -1).squeeze(), targets.reshape(B * L, -1).squeeze()
+        )
 
         return loss_by_head
 
@@ -59,7 +61,9 @@ def main(train_config: TrainConfig) -> None:
     torch.manual_seed(seed)
 
     train_loader, val_loader = get_dataloaders(train_config)
-    trainer = IndependentButtonTrainer(config=train_config, train_loader=train_loader, val_loader=val_loader)
+    trainer = IndependentButtonTrainer(
+        config=train_config, train_loader=train_loader, val_loader=val_loader
+    )
     trainer.train_loop(train_loader, val_loader)
 
 

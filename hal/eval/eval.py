@@ -1,6 +1,7 @@
 """
 Run closed loop evaluation of a model in the emulator.
 """
+
 import argparse
 import sys
 import time
@@ -83,7 +84,9 @@ def cpu_worker(
             gamestate_generator = emulator_manager.run_game()
             gamestate = next(gamestate_generator)
             # Skip first N frames to match starting frame offset from training sequence sampling
-            logger.debug(f"Skipping {preprocessor.eval_warmup_frames} starting frames to match training distribution")
+            logger.debug(
+                f"Skipping {preprocessor.eval_warmup_frames} starting frames to match training distribution"
+            )
             for _ in range(preprocessor.eval_warmup_frames):
                 gamestate = next(gamestate_generator)
 
@@ -117,7 +120,7 @@ def cpu_worker(
 
                 if debug and i % 60 == 0:
                     logger.debug(
-                        f"Preprocess: {preprocess_time*1000:.2f}ms, Transfer: {transfer_time*1000:.2f}ms, Postprocess: {postprocess_time*1000:.2f}ms"
+                        f"Preprocess: {preprocess_time * 1000:.2f}ms, Transfer: {transfer_time * 1000:.2f}ms, Postprocess: {postprocess_time * 1000:.2f}ms"
                     )
 
                 # Send controller inputs to emulator, update gamestate
@@ -128,7 +131,9 @@ def cpu_worker(
                 i += 1
         except StopIteration:
             logger.success(f"CPU worker {rank} episode complete.")
-            logger.info(f"CPU worker {rank} episode stats: {emulator_manager.episode_stats}")
+            logger.info(
+                f"CPU worker {rank} episode stats: {emulator_manager.episode_stats}"
+            )
             episode_stats_queue.put(emulator_manager.episode_stats)
         except Exception as e:
             logger.error(
@@ -164,8 +169,12 @@ def gpu_worker(
 
     # Stack along time dimension
     # shape: (n_workers, seq_len)
-    context_window_BL: TensorDict = torch.stack([shared_batched_model_input_B for _ in range(seq_len)], dim=-1).to(device)  # type: ignore
-    logger.info(f"Context window shape: {context_window_BL.shape}, device: {context_window_BL.device}")
+    context_window_BL: TensorDict = torch.stack(
+        [shared_batched_model_input_B for _ in range(seq_len)], dim=-1
+    ).to(device)  # type: ignore
+    logger.info(
+        f"Context window shape: {context_window_BL.shape}, device: {context_window_BL.device}"
+    )
 
     # Warmup CUDA graphs with dummy inputs
     logger.info("Compiling model...")
@@ -177,10 +186,17 @@ def gpu_worker(
     def wait_for_cpu_workers(timeout: float = 5.0) -> None:
         # Wait for all CPU workers to signal that data is ready
         flag_wait_start = time.perf_counter()
-        for i, (input_flag, stop_event) in enumerate(zip(model_input_ready_flags, stop_events)):
+        for i, (input_flag, stop_event) in enumerate(
+            zip(model_input_ready_flags, stop_events)
+        ):
             while not input_flag.is_set() and not stop_event.is_set():
-                if not input_flag.is_set() and time.perf_counter() - flag_wait_start > timeout:
-                    logger.warning(f"CPU worker {i} input flag wait took too long, stopping episode")
+                if (
+                    not input_flag.is_set()
+                    and time.perf_counter() - flag_wait_start > timeout
+                ):
+                    logger.warning(
+                        f"CPU worker {i} input flag wait took too long, stopping episode"
+                    )
                     input_flag.set()
                     stop_event.set()
                 time.sleep(0.0001)  # Sleep briefly to avoid busy waiting
@@ -200,12 +216,16 @@ def gpu_worker(
         transfer_start = time.perf_counter()
         if iteration < seq_len:
             # While context window is not full, fill in from the left
-            context_window_BL[:, iteration].copy_(shared_batched_model_input_B, non_blocking=True)
+            context_window_BL[:, iteration].copy_(
+                shared_batched_model_input_B, non_blocking=True
+            )
         else:
             # Update the context window by rolling frame data left and adding new data on the right
             # TODO move this to line 178 to overlap with waiting on CPU workers
             context_window_BL[:, :-1].copy_(context_window_BL[:, 1:].clone())
-            context_window_BL[:, -1].copy_(shared_batched_model_input_B, non_blocking=True)
+            context_window_BL[:, -1].copy_(
+                shared_batched_model_input_B, non_blocking=True
+            )
         # context_window_BL.save(f"/tmp/multishine_debugging/model_inputs_{iteration:06d}")
         transfer_time = time.perf_counter() - transfer_start
 
@@ -225,9 +245,9 @@ def gpu_worker(
         total_time = time.perf_counter() - iteration_start
 
         if iteration % 60 == 0:
-            msg = f"Iteration {iteration}: Total: {total_time*1000:.2f}ms "
+            msg = f"Iteration {iteration}: Total: {total_time * 1000:.2f}ms "
             if debug:
-                msg += f"(Update context: {transfer_time*1000:.2f}ms, Inference: {inference_time*1000:.2f}ms, Writeback: {writeback_time*1000:.2f}ms)"
+                msg += f"(Update context: {transfer_time * 1000:.2f}ms, Inference: {inference_time * 1000:.2f}ms, Writeback: {writeback_time * 1000:.2f}ms)"
             logger.debug(msg)
 
         iteration += 1
@@ -256,7 +276,9 @@ def flatten_replay_dir(replay_dir: Path) -> None:
         except OSError as e:
             logger.warning(f"Failed to move replay file {file}: {e}")
 
-    for directory in sorted(replay_dir.glob("**/"), key=lambda x: len(str(x)), reverse=True):
+    for directory in sorted(
+        replay_dir.glob("**/"), key=lambda x: len(str(x)), reverse=True
+    ):
         if directory != replay_dir:
             try:
                 directory.rmdir()
@@ -289,16 +311,20 @@ def run_closed_loop_evaluation(
     stop_events: List[EventType] = [mp.Event() for _ in range(n_workers)]
 
     # Share and pin buffers in CPU memory for transferring model inputs and outputs
-    mock_framedata_L = mock_framedata_as_tensordict(preprocessor.trajectory_sampling_len)
+    mock_framedata_L = mock_framedata_as_tensordict(
+        preprocessor.trajectory_sampling_len
+    )
     # Store only a single time step to minimize copying
     mock_model_inputs_ = preprocessor.preprocess_inputs(mock_framedata_L, player)[-1]
     # batch_size == n_workers
     shared_batched_model_input_B: TensorDict = torch.stack(
-        [mock_model_inputs_ for _ in range(n_workers)], dim=0  # type: ignore
+        [mock_model_inputs_ for _ in range(n_workers)],
+        dim=0,  # type: ignore
     )
     shared_batched_model_input_B = share_and_pin_memory(shared_batched_model_input_B)
     shared_batched_model_output_B: TensorDict = torch.stack(
-        [preprocessor.mock_preds_as_tensordict() for _ in range(n_workers)], dim=0  # type: ignore
+        [preprocessor.mock_preds_as_tensordict() for _ in range(n_workers)],
+        dim=0,  # type: ignore
     )
     shared_batched_model_output_B = share_and_pin_memory(shared_batched_model_output_B)
 
@@ -321,7 +347,9 @@ def run_closed_loop_evaluation(
 
     matchups_distribution = eval_config.matchups_distribution
     matchups = getattr(Matchup, matchups_distribution)(n_workers)
-    base_replay_dir = get_replay_dir(artifact_dir, step=checkpoint_idx) / matchups_distribution
+    base_replay_dir = (
+        get_replay_dir(artifact_dir, step=checkpoint_idx) / matchups_distribution
+    )
     logger.info(f"Replays will be saved to {base_replay_dir}")
 
     cpu_processes: List[mp.Process] = []
@@ -377,14 +405,20 @@ if __name__ == "__main__":
     parser.add_argument("--model_dir", type=str, help="Path to model directory")
     parser.add_argument("--checkpoint_idx", type=int, help="Checkpoint index")
     parser.add_argument("--n_workers", type=int, help="Number of CPU workers")
-    parser.add_argument("--enable_ffw", action="store_true", help="Enable fast forward mode")
+    parser.add_argument(
+        "--enable_ffw", action="store_true", help="Enable fast forward mode"
+    )
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    parser.add_argument("--matchups", type=str, default="spacies", help="Matchup distribution")
+    parser.add_argument(
+        "--matchups", type=str, default="spacies", help="Matchup distribution"
+    )
     args = parser.parse_args()
     run_closed_loop_evaluation(
         artifact_dir=Path(args.model_dir),
         checkpoint_idx=args.checkpoint_idx,
-        eval_config=EvalConfig(n_workers=args.n_workers, matchups_distribution=args.matchups),
+        eval_config=EvalConfig(
+            n_workers=args.n_workers, matchups_distribution=args.matchups
+        ),
         enable_ffw=args.enable_ffw,
         debug=args.debug,
     )

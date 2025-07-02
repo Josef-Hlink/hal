@@ -62,11 +62,15 @@ class Matchup:
 
     @classmethod
     def fox_bf(cls, n: int) -> List["Matchup"]:
-        return [Matchup(stage="BATTLEFIELD", ego_character="FOX", opponent_character="FOX")] * n
+        return [
+            Matchup(stage="BATTLEFIELD", ego_character="FOX", opponent_character="FOX")
+        ] * n
 
     @classmethod
     def fox_yoshis(cls, n: int) -> List["Matchup"]:
-        return [Matchup(stage="YOSHIS_STORY", ego_character="FOX", opponent_character="FOX")] * n
+        return [
+            Matchup(stage="YOSHIS_STORY", ego_character="FOX", opponent_character="FOX")
+        ] * n
 
     @classmethod
     def fox_dittos(cls, n: int, seed: int = 42) -> List["Matchup"]:
@@ -79,7 +83,9 @@ class Matchup:
         )
         matchups = []
         for stage in stages:
-            matchups.append(Matchup(stage=stage, ego_character="FOX", opponent_character="FOX"))
+            matchups.append(
+                Matchup(stage=stage, ego_character="FOX", opponent_character="FOX")
+            )
         return matchups
 
     @classmethod
@@ -92,8 +98,12 @@ class Matchup:
         while len(matchups) < n:
             stage = stages[i % len(stages)]
             ego_char = characters[(i // len(stages)) % len(characters)]
-            opp_char = characters[(i // len(stages) // len(characters)) % len(characters)]
-            matchups.append(cls(stage=stage, ego_character=ego_char, opponent_character=opp_char))
+            opp_char = characters[
+                (i // len(stages) // len(characters)) % len(characters)
+            ]
+            matchups.append(
+                cls(stage=stage, ego_character=ego_char, opponent_character=opp_char)
+            )
             i += 1
         return matchups
 
@@ -113,10 +123,18 @@ class Matchup:
             p=list(PRIOR_CHARACTER_LIKELIHOODS.values()),
         )
         # We can't force CPU to pick Sheik, so we replace all Sheik with Zelda
-        opponent_characters = ["ZELDA" if c == "SHEIK" else c for c in opponent_characters]
+        opponent_characters = [
+            "ZELDA" if c == "SHEIK" else c for c in opponent_characters
+        ]
         matchups = []
         for stage, opponent_character in zip(stages, opponent_characters):
-            matchups.append(Matchup(stage=stage, ego_character="FOX", opponent_character=opponent_character))
+            matchups.append(
+                Matchup(
+                    stage=stage,
+                    ego_character="FOX",
+                    opponent_character=opponent_character,
+                )
+            )
         return matchups
 
     @classmethod
@@ -142,11 +160,19 @@ class Matchup:
             p=list(PRIOR_CHARACTER_LIKELIHOODS.values()),
         )
         # We can't force CPU to pick Sheik, so we replace all Sheik with Zelda
-        opponent_characters = ["ZELDA" if c == "SHEIK" else c for c in opponent_characters]
+        opponent_characters = [
+            "ZELDA" if c == "SHEIK" else c for c in opponent_characters
+        ]
         matchups = []
-        for stages, ego_characters, opponent_characters in zip(stages, ego_characters, opponent_characters):
+        for stages, ego_characters, opponent_characters in zip(
+            stages, ego_characters, opponent_characters
+        ):
             matchups.append(
-                Matchup(stage=stages, ego_character=ego_characters, opponent_character=opponent_characters)
+                Matchup(
+                    stage=stages,
+                    ego_character=ego_characters,
+                    opponent_character=opponent_characters,
+                )
             )
         return matchups
 
@@ -200,7 +226,9 @@ class EpisodeStats:
         self._prev_p2_stock = p2.stock
         self.frames += 1
 
-    def to_wandb_dict(self, player: Player, prefix: str = "closed_loop_eval") -> Dict[str, float]:
+    def to_wandb_dict(
+        self, player: Player, prefix: str = "closed_loop_eval"
+    ) -> Dict[str, float]:
         if self.episodes == 0:
             logger.warning("No closed loop episode stats recorded")
             return {}
@@ -208,7 +236,11 @@ class EpisodeStats:
         # Calculate stock win rate as stocks taken / (stocks taken + stocks lost)
         stocks_taken = self.p2_stocks_lost if player == "p1" else self.p1_stocks_lost
         stocks_lost = self.p1_stocks_lost if player == "p1" else self.p2_stocks_lost
-        stock_win_rate = stocks_taken / (stocks_taken + stocks_lost) if (stocks_taken + stocks_lost) > 0 else 0.0
+        stock_win_rate = (
+            stocks_taken / (stocks_taken + stocks_lost)
+            if (stocks_taken + stocks_lost) > 0
+            else 0.0
+        )
         damage_inflicted = self.p2_damage if player == "p1" else self.p1_damage
         damage_received = self.p1_damage if player == "p1" else self.p2_damage
         damage_win_rate = (
@@ -234,7 +266,9 @@ class EpisodeStats:
 
 def mock_framedata_as_tensordict(seq_len: int) -> TensorDict:
     """Mock `seq_len` frames of gamestate data."""
-    return TensorDict({k: torch.ones(seq_len) for k in NP_TYPE_BY_COLUMN}, batch_size=(seq_len,))
+    return TensorDict(
+        {k: torch.ones(seq_len) for k in NP_TYPE_BY_COLUMN}, batch_size=(seq_len,)
+    )
 
 
 def share_and_pin_memory(tensordict: TensorDict) -> TensorDict:
@@ -251,7 +285,9 @@ def share_and_pin_memory(tensordict: TensorDict) -> TensorDict:
 
     for tensor in tensordict.flatten_keys().values():
         assert isinstance(tensor, torch.Tensor)
-        cudart.cudaHostRegister(tensor.data_ptr(), tensor.numel() * tensor.element_size(), 0)
+        cudart.cudaHostRegister(
+            tensor.data_ptr(), tensor.numel() * tensor.element_size(), 0
+        )
         assert tensor.is_shared()
         assert tensor.is_pinned()
 

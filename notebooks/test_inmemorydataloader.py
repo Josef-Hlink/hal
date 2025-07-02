@@ -9,8 +9,12 @@ from hal.training.config import ReplayFilter
 from hal.training.deprecated.dataset import InMemoryTensordictDataset
 from hal.training.deprecated.dataset import load_filtered_parquet_as_tensordict
 
-data_config = DataConfig(replay_filter=ReplayFilter(stage="BATTLEFIELD", ego_character="FOX"))
-td = load_filtered_parquet_as_tensordict("/opt/projects/hal2/data/dev/train.parquet", data_config)
+data_config = DataConfig(
+    replay_filter=ReplayFilter(stage="BATTLEFIELD", ego_character="FOX")
+)
+td = load_filtered_parquet_as_tensordict(
+    "/opt/projects/hal2/data/dev/train.parquet", data_config
+)
 stats_path = Path("/opt/projects/hal2/data/dev/stats.json")
 stats = load_dataset_stats(stats_path)
 

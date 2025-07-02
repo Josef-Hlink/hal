@@ -60,7 +60,6 @@ ds[0]
 # %%
 import torch
 
-torch.stack([ds[0]["inputs"], ds, dim=0)
 # %%
 import os
 
@@ -83,7 +82,7 @@ for batch in train_loader:
     i += 1
     if i > 10:
         break
-    
+
 
 # %%
 config

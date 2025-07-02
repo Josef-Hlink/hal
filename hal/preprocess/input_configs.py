@@ -7,13 +7,17 @@ from hal.preprocess.registry import InputConfigRegistry
 from hal.preprocess.target_configs import baseline_coarse
 from hal.preprocess.target_configs import baseline_fine
 from hal.preprocess.target_configs import baseline_finer
-from hal.preprocess.target_configs import button_fine_main_coarser_cstick_medium_analog_shoulder
+from hal.preprocess.target_configs import (
+    button_fine_main_coarser_cstick_medium_analog_shoulder,
+)
 from hal.preprocess.target_configs import fine_main_analog_shoulder
 from hal.preprocess.target_configs import fine_main_analog_shoulder_early_release
 from hal.preprocess.target_configs import fine_main_coarser_cstick
 from hal.preprocess.target_configs import fine_orig_buttons
 from hal.preprocess.target_configs import fine_orig_buttons_one_hot_shoulder_one_hot
-from hal.preprocess.target_configs import separate_digital_shoulders_analog_shoulder_one_hot
+from hal.preprocess.target_configs import (
+    separate_digital_shoulders_analog_shoulder_one_hot,
+)
 from hal.preprocess.transformations import cast_int32
 from hal.preprocess.transformations import concat_controller_inputs
 from hal.preprocess.transformations import invert_and_normalize
@@ -92,7 +96,9 @@ def baseline_controller() -> InputConfig:
         base_config,
         transformation_by_feature_name={
             **base_config.transformation_by_feature_name,
-            "controller": partial(concat_controller_inputs, target_config=baseline_coarse()),
+            "controller": partial(
+                concat_controller_inputs, target_config=baseline_coarse()
+            ),
         },
         frame_offsets_by_input={
             **base_config.frame_offsets_by_input,
@@ -123,7 +129,9 @@ def baseline_controller_fine() -> InputConfig:
         base_config,
         transformation_by_feature_name={
             **base_config.transformation_by_feature_name,
-            "controller": partial(concat_controller_inputs, target_config=baseline_fine()),
+            "controller": partial(
+                concat_controller_inputs, target_config=baseline_fine()
+            ),
         },
         frame_offsets_by_input={
             **base_config.frame_offsets_by_input,
@@ -154,7 +162,9 @@ def baseline_controller_finer() -> InputConfig:
         base_config,
         transformation_by_feature_name={
             **base_config.transformation_by_feature_name,
-            "controller": partial(concat_controller_inputs, target_config=baseline_finer()),
+            "controller": partial(
+                concat_controller_inputs, target_config=baseline_finer()
+            ),
         },
         frame_offsets_by_input={
             **base_config.frame_offsets_by_input,
@@ -279,7 +289,9 @@ def fourier_xy() -> InputConfig:
             "position_x": partial(normalize_and_embed_fourier, dim=4),
             "position_y": partial(normalize_and_embed_fourier, dim=4),
             # Target features
-            "controller": partial(concat_controller_inputs, target_config=baseline_coarse()),
+            "controller": partial(
+                concat_controller_inputs, target_config=baseline_coarse()
+            ),
         },
         frame_offsets_by_input={
             "controller": -1,
@@ -313,7 +325,9 @@ def baseline_controller_fine_main_analog_shoulder() -> InputConfig:
         base_config,
         transformation_by_feature_name={
             **base_config.transformation_by_feature_name,
-            "controller": partial(concat_controller_inputs, target_config=fine_main_analog_shoulder()),
+            "controller": partial(
+                concat_controller_inputs, target_config=fine_main_analog_shoulder()
+            ),
         },
         frame_offsets_by_input={
             **base_config.frame_offsets_by_input,
@@ -344,7 +358,10 @@ def baseline_controller_fine_main_analog_shoulder_early_release() -> InputConfig
         base_config,
         transformation_by_feature_name={
             **base_config.transformation_by_feature_name,
-            "controller": partial(concat_controller_inputs, target_config=fine_main_analog_shoulder_early_release()),
+            "controller": partial(
+                concat_controller_inputs,
+                target_config=fine_main_analog_shoulder_early_release(),
+            ),
         },
         frame_offsets_by_input={
             **base_config.frame_offsets_by_input,
@@ -375,7 +392,9 @@ def baseline_fine_main_coarser_cstick() -> InputConfig:
         base_config,
         transformation_by_feature_name={
             **base_config.transformation_by_feature_name,
-            "controller": partial(concat_controller_inputs, target_config=fine_main_coarser_cstick()),
+            "controller": partial(
+                concat_controller_inputs, target_config=fine_main_coarser_cstick()
+            ),
         },
         frame_offsets_by_input={
             **base_config.frame_offsets_by_input,
@@ -406,7 +425,9 @@ def baseline_fine_orig_buttons() -> InputConfig:
         base_config,
         transformation_by_feature_name={
             **base_config.transformation_by_feature_name,
-            "controller": partial(concat_controller_inputs, target_config=fine_orig_buttons()),
+            "controller": partial(
+                concat_controller_inputs, target_config=fine_orig_buttons()
+            ),
         },
         frame_offsets_by_input={
             **base_config.frame_offsets_by_input,
@@ -438,7 +459,8 @@ def baseline_fine_orig_buttons_one_hot_no_shoulder() -> InputConfig:
         transformation_by_feature_name={
             **base_config.transformation_by_feature_name,
             "controller": partial(
-                concat_controller_inputs, target_config=fine_orig_buttons_one_hot_shoulder_one_hot()
+                concat_controller_inputs,
+                target_config=fine_orig_buttons_one_hot_shoulder_one_hot(),
             ),
         },
         frame_offsets_by_input={
@@ -471,7 +493,8 @@ def baseline_separate_digital_shoulders_analog_shoulder_one_hot() -> InputConfig
         transformation_by_feature_name={
             **base_config.transformation_by_feature_name,
             "controller": partial(
-                concat_controller_inputs, target_config=separate_digital_shoulders_analog_shoulder_one_hot()
+                concat_controller_inputs,
+                target_config=separate_digital_shoulders_analog_shoulder_one_hot(),
             ),
         },
         frame_offsets_by_input={
@@ -484,7 +507,9 @@ def baseline_separate_digital_shoulders_analog_shoulder_one_hot() -> InputConfig
         },
         input_shapes_by_head={
             **base_config.input_shapes_by_head,
-            "controller": (separate_digital_shoulders_analog_shoulder_one_hot().target_size,),
+            "controller": (
+                separate_digital_shoulders_analog_shoulder_one_hot().target_size,
+            ),
         },
     )
     return config
@@ -515,7 +540,9 @@ def baseline_button_fine_main_coarser_cstick_medium_analog_shoulder() -> InputCo
         },
         input_shapes_by_head={
             **base_config.input_shapes_by_head,
-            "controller": (button_fine_main_coarser_cstick_medium_analog_shoulder().target_size,),
+            "controller": (
+                button_fine_main_coarser_cstick_medium_analog_shoulder().target_size,
+            ),
         },
     )
     return config
@@ -525,23 +552,30 @@ InputConfigRegistry.register("baseline", baseline())
 InputConfigRegistry.register("baseline_controller", baseline_controller())
 InputConfigRegistry.register("baseline_controller_fine", baseline_controller_fine())
 InputConfigRegistry.register("baseline_action_frame", baseline_action_frame())
-InputConfigRegistry.register("baseline_action_frame_controller", baseline_action_frame_controller())
+InputConfigRegistry.register(
+    "baseline_action_frame_controller", baseline_action_frame_controller()
+)
 InputConfigRegistry.register("fourier_xy", fourier_xy())
 InputConfigRegistry.register(
-    "baseline_controller_fine_main_analog_shoulder", baseline_controller_fine_main_analog_shoulder()
+    "baseline_controller_fine_main_analog_shoulder",
+    baseline_controller_fine_main_analog_shoulder(),
 )
 InputConfigRegistry.register(
     "baseline_controller_fine_main_analog_shoulder_early_release",
     baseline_controller_fine_main_analog_shoulder_early_release(),
 )
 InputConfigRegistry.register("baseline_controller_finer", baseline_controller_finer())
-InputConfigRegistry.register("baseline_fine_main_coarser_cstick", baseline_fine_main_coarser_cstick())
+InputConfigRegistry.register(
+    "baseline_fine_main_coarser_cstick", baseline_fine_main_coarser_cstick()
+)
 InputConfigRegistry.register("baseline_fine_orig_buttons", baseline_fine_orig_buttons())
 InputConfigRegistry.register(
-    "baseline_fine_orig_buttons_one_hot_no_shoulder", baseline_fine_orig_buttons_one_hot_no_shoulder()
+    "baseline_fine_orig_buttons_one_hot_no_shoulder",
+    baseline_fine_orig_buttons_one_hot_no_shoulder(),
 )
 InputConfigRegistry.register(
-    "separate_digital_shoulders_analog_shoulder_one_hot", baseline_separate_digital_shoulders_analog_shoulder_one_hot()
+    "separate_digital_shoulders_analog_shoulder_one_hot",
+    baseline_separate_digital_shoulders_analog_shoulder_one_hot(),
 )
 InputConfigRegistry.register(
     "baseline_button_fine_main_coarser_cstick_medium_analog_shoulder",

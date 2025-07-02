@@ -21,7 +21,9 @@ class FlexCausalSelfAttention(nn.Module):
         self.embed_dim: int = embed_dim
         self.num_heads: int = num_heads
         self.head_dim: int = embed_dim // num_heads
-        self.max_position: int = max_position  # e.g.,  max seq length or max relative index + 1
+        self.max_position: int = (
+            max_position  # e.g.,  max seq length or max relative index + 1
+        )
 
         # Projectors for queries, keys, values, and output
         self.query = nn.Linear(embed_dim, embed_dim)
@@ -40,16 +42,24 @@ class FlexCausalSelfAttention(nn.Module):
         """
         B, seq_len, _ = x.shape
         if seq_len > self.max_position:
-            raise ValueError(f"Sequence length {seq_len} exceeds max_position {self.max_position}")
+            raise ValueError(
+                f"Sequence length {seq_len} exceeds max_position {self.max_position}"
+            )
 
         # Compute Q, K, V projections and reshape for multi-head attention
         q: torch.Tensor = self.query(x)  # (B, seq_len, embed_dim)
         k: torch.Tensor = self.key(x)  # (B, seq_len, embed_dim)
         v: torch.Tensor = self.value(x)  # (B, seq_len, embed_dim)
         # Reshape to (B, num_heads, seq_len, head_dim)
-        q = q.view(B, seq_len, self.num_heads, self.head_dim).transpose(1, 2)  # (B, H, seq_len, head_dim)
-        k = k.view(B, seq_len, self.num_heads, self.head_dim).transpose(1, 2)  # (B, H, seq_len, head_dim)
-        v = v.view(B, seq_len, self.num_heads, self.head_dim).transpose(1, 2)  # (B, H, seq_len, head_dim)
+        q = q.view(B, seq_len, self.num_heads, self.head_dim).transpose(
+            1, 2
+        )  # (B, H, seq_len, head_dim)
+        k = k.view(B, seq_len, self.num_heads, self.head_dim).transpose(
+            1, 2
+        )  # (B, H, seq_len, head_dim)
+        v = v.view(B, seq_len, self.num_heads, self.head_dim).transpose(
+            1, 2
+        )  # (B, H, seq_len, head_dim)
 
         # Prepare scaling factor
         scale: float = 1.0 / math.sqrt(self.head_dim)
@@ -60,11 +70,17 @@ class FlexCausalSelfAttention(nn.Module):
         #  - b, h: batch index and head index (int32 scalar indices)
         #  - q_idx, kv_idx: positions of the query and key (int32 scalar indices)
         def score_mod(
-            score: torch.Tensor, b: torch.Tensor, h: torch.Tensor, q_idx: torch.Tensor, kv_idx: torch.Tensor
+            score: torch.Tensor,
+            b: torch.Tensor,
+            h: torch.Tensor,
+            q_idx: torch.Tensor,
+            kv_idx: torch.Tensor,
         ) -> torch.Tensor:
             # Apply causal mask: if key position is ahead of query, return -inf (mask out)
             # q_idx >= kv_idx means key is not after query (allowed in causal attention)
-            score = torch.where(q_idx >= kv_idx, score, torch.tensor(-float("inf"), device=score.device))
+            score = torch.where(
+                q_idx >= kv_idx, score, torch.tensor(-float("inf"), device=score.device)
+            )
             # Add relative positional bias for allowed positions
             # Compute index in rel_key table: (kv_idx - q_idx) + (max_position - 1)
             # For kv_idx <= q_idx, (kv_idx - q_idx) is <= 0, offsetting by max_position-1 yields a valid index [0, max_position-1]
@@ -82,7 +98,9 @@ class FlexCausalSelfAttention(nn.Module):
         # This computes softmax(score_mod(Q·K^T)) and returns weighted sum: shape (B, H, seq_len, head_dim)
         attn_out: torch.Tensor = flex_attention(q, k, v, score_mod=score_mod)
         # Combine heads and project out
-        attn_out = attn_out.transpose(1, 2).reshape(B, seq_len, self.embed_dim)  # (B, seq_len, embed_dim)
+        attn_out = attn_out.transpose(1, 2).reshape(
+            B, seq_len, self.embed_dim
+        )  # (B, seq_len, embed_dim)
         return self.proj_out(attn_out)
 
 
@@ -123,16 +141,24 @@ class VanillaCausalSelfAttention(nn.Module):
         """
         B, seq_len, _ = x.shape
         if seq_len > self.max_position:
-            raise ValueError(f"Sequence length {seq_len} exceeds max_position {self.max_position}")
+            raise ValueError(
+                f"Sequence length {seq_len} exceeds max_position {self.max_position}"
+            )
 
         # Compute Q, K, V projections
         Q: torch.Tensor = self.query(x)  # (B, seq_len, embed_dim)
         K: torch.Tensor = self.key(x)  # (B, seq_len, embed_dim)
         V: torch.Tensor = self.value(x)  # (B, seq_len, embed_dim)
         # Reshape into (B, H, seq_len, head_dim)
-        Q = Q.view(B, seq_len, self.num_heads, self.head_dim).transpose(1, 2)  # (B, H, seq_len, head_dim)
-        K = K.view(B, seq_len, self.num_heads, self.head_dim).transpose(1, 2)  # (B, H, seq_len, head_dim)
-        V = V.view(B, seq_len, self.num_heads, self.head_dim).transpose(1, 2)  # (B, H, seq_len, head_dim)
+        Q = Q.view(B, seq_len, self.num_heads, self.head_dim).transpose(
+            1, 2
+        )  # (B, H, seq_len, head_dim)
+        K = K.view(B, seq_len, self.num_heads, self.head_dim).transpose(
+            1, 2
+        )  # (B, H, seq_len, head_dim)
+        V = V.view(B, seq_len, self.num_heads, self.head_dim).transpose(
+            1, 2
+        )  # (B, H, seq_len, head_dim)
 
         # 1. Content-based attention scores: Q @ K^T
         # K^T shape for matmul: (B, H, head_dim, seq_len)
@@ -142,35 +168,55 @@ class VanillaCausalSelfAttention(nn.Module):
         # 2. Relative positional scores via skew trick:
         # Extract the needed portion of rel_key for this sequence length.
         # We use the last `seq_len` entries of the table, which correspond to distances -(seq_len-1)...0.
-        start_index = self.max_position - seq_len  # index in rel_key that corresponds to distance = -(seq_len-1)
+        start_index = (
+            self.max_position - seq_len
+        )  # index in rel_key that corresponds to distance = -(seq_len-1)
         # Slice shape: (seq_len, head_dim), to be transposed for matmul
-        rel_slice: torch.Tensor = self.rel_key[start_index:, :].transpose(0, 1)  # (head_dim, seq_len)
+        rel_slice: torch.Tensor = self.rel_key[start_index:, :].transpose(
+            0, 1
+        )  # (head_dim, seq_len)
         # Compute Q * rel_slice (like Q @ E_r^T)
         QEr: torch.Tensor = torch.matmul(Q, rel_slice)  # (B, H, seq_len, seq_len)
         # Apply skewing: pad and reshape to align relative positions [oai_citation_attribution:13‡jaketae.github.io](https://jaketae.github.io/study/relative-positional-encoding/#:~:text=def%20skew%28self%2C%20QEr%29%3A%20,batch_size%2C%20num_heads%2C%20seq_len%2C%20seq_len)
         padded = nn.functional.pad(QEr, (1, 0, 0, 0))
         # After padding: shape = (B, H, seq_len, 1+seq_len)
-        B_, H_, num_rows, num_cols = padded.shape  # num_rows = seq_len, num_cols = seq_len+1
+        B_, H_, num_rows, num_cols = (
+            padded.shape
+        )  # num_rows = seq_len, num_cols = seq_len+1
         # Reshape to shift the matrix
         reshaped = padded.view(B_, H_, num_cols, num_rows)  # (B, H, seq_len+1, seq_len)
         Srel: torch.Tensor = reshaped[:, :, 1:, :]  # (B, H, seq_len, seq_len)
         # Now Srel[b,h,i,j] = Q[b,h,i] · r_{(j-i)}, which is the desired relative score
 
         # 3. Combine content and relative scores, then scale.
-        attn_scores: torch.Tensor = attn_content + Srel  # shape (B, H, seq_len, seq_len)
-        attn_scores = attn_scores * (1.0 / math.sqrt(self.head_dim))  # scale by 1/sqrt(d_head)
+        attn_scores: torch.Tensor = (
+            attn_content + Srel
+        )  # shape (B, H, seq_len, seq_len)
+        attn_scores = attn_scores * (
+            1.0 / math.sqrt(self.head_dim)
+        )  # scale by 1/sqrt(d_head)
 
         # 4. Apply causal mask: disallow attending to future positions
         # Use the precomputed mask buffer (shape 1x1xmax_lenxmax_len) and slice to seq_len.
-        mask = self.mask[:, :, :seq_len, :seq_len]  # (1, 1, seq_len, seq_len), 1 where allowed
-        attn_scores = attn_scores.masked_fill(mask == 0, float("-inf"))  # set masked positions to -inf
+        mask = self.mask[
+            :, :, :seq_len, :seq_len
+        ]  # (1, 1, seq_len, seq_len), 1 where allowed
+        attn_scores = attn_scores.masked_fill(
+            mask == 0, float("-inf")
+        )  # set masked positions to -inf
 
         # 5. Softmax over the last dimension (keys dimension) and compute attention output
-        attn_weights: torch.Tensor = torch.softmax(attn_scores, dim=-1)  # (B, H, seq_len, seq_len)
-        attn_out: torch.Tensor = torch.matmul(attn_weights, V)  # (B, H, seq_len, head_dim)
+        attn_weights: torch.Tensor = torch.softmax(
+            attn_scores, dim=-1
+        )  # (B, H, seq_len, seq_len)
+        attn_out: torch.Tensor = torch.matmul(
+            attn_weights, V
+        )  # (B, H, seq_len, head_dim)
 
         # 6. Reshape `attn_out` back to (B, seq_len, embed_dim) and apply output projection
-        attn_out = attn_out.transpose(1, 2).reshape(B, seq_len, self.embed_dim)  # (B, seq_len, embed_dim)
+        attn_out = attn_out.transpose(1, 2).reshape(
+            B, seq_len, self.embed_dim
+        )  # (B, seq_len, embed_dim)
         return self.proj_out(attn_out)
 
 
@@ -198,8 +244,15 @@ for name, param in vanilla_attn.named_parameters():
 for name, param in flex_attn.named_parameters():
     assert name in dict(vanilla_attn.named_parameters())
     # Check that the difference is negligible
-    diff = (param.data - dict(vanilla_attn.named_parameters())[name].data).abs().max().item()
-    assert diff < 1e-6, f"Parameter {name} mismatch between flex and vanilla implementations"
+    diff = (
+        (param.data - dict(vanilla_attn.named_parameters())[name].data)
+        .abs()
+        .max()
+        .item()
+    )
+    assert diff < 1e-6, (
+        f"Parameter {name} mismatch between flex and vanilla implementations"
+    )
 
 # Create a random input tensor
 x = torch.randn(batch_size, seq_len, embed_dim, requires_grad=True)
@@ -211,7 +264,9 @@ out_vanilla = vanilla_attn(x)
 # Compare outputs
 max_diff = (out_flex - out_vanilla).abs().max().item()
 print(f"Max difference between outputs: {max_diff:.6f}")
-assert torch.allclose(out_flex, out_vanilla, atol=1e-6, rtol=1e-6), "Outputs differ between implementations"
+assert torch.allclose(out_flex, out_vanilla, atol=1e-6, rtol=1e-6), (
+    "Outputs differ between implementations"
+)
 
 # Backpropagate a simple mean squared error loss on both outputs to test gradients
 target = torch.randn_like(out_flex)  # random target for loss
@@ -237,7 +292,9 @@ loss_van2.backward()
 assert torch.allclose(x_flex.grad, x_van.grad, atol=1e-6), "Input gradients differ"
 
 # Check gradient equivalence for all parameters
-for (name_f, param_f), (name_v, param_v) in zip(flex_attn.named_parameters(), vanilla_attn.named_parameters()):
+for (name_f, param_f), (name_v, param_v) in zip(
+    flex_attn.named_parameters(), vanilla_attn.named_parameters()
+):
     # The parameter names should match in our design
     assert name_f == name_v
     if param_f.grad is None or param_v.grad is None:
@@ -245,6 +302,10 @@ for (name_f, param_f), (name_v, param_v) in zip(flex_attn.named_parameters(), va
     # Compare gradients
     grad_diff = (param_f.grad - param_v.grad).abs().max().item()
     print(f"{name_f} grad max diff: {grad_diff:.6f}")
-    assert torch.allclose(param_f.grad, param_v.grad, atol=1e-6, rtol=1e-6), f"Gradient mismatch for {name_f}"
+    assert torch.allclose(param_f.grad, param_v.grad, atol=1e-6, rtol=1e-6), (
+        f"Gradient mismatch for {name_f}"
+    )
 
-print("All tests passed: both implementations are numerically equivalent and have consistent gradients.")
+print(
+    "All tests passed: both implementations are numerically equivalent and have consistent gradients."
+)

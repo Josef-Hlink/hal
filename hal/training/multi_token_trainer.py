@@ -23,7 +23,10 @@ class MultiTokenTrainer(Trainer):
     """
 
     def __init__(
-        self, config: TrainConfig, train_loader: StreamingDataLoader, val_loader: StreamingDataLoader
+        self,
+        config: TrainConfig,
+        train_loader: StreamingDataLoader,
+        val_loader: StreamingDataLoader,
     ) -> None:
         super().__init__(config, train_loader, val_loader)
         assert self.preprocessor.target_config.multi_token_heads is not None
@@ -51,7 +54,9 @@ class MultiTokenTrainer(Trainer):
                     feature_losses.append(frame_loss)
 
             if feature_losses:
-                loss_dict[f"loss_{target_feature}"] = torch.mean(torch.stack(feature_losses)).detach()
+                loss_dict[f"loss_{target_feature}"] = torch.mean(
+                    torch.stack(feature_losses)
+                ).detach()
 
         return loss_dict
 
@@ -68,7 +73,9 @@ def main(train_config: TrainConfig) -> None:
     torch.manual_seed(seed)
 
     train_loader, val_loader = get_dataloaders(train_config)
-    trainer = MultiTokenTrainer(config=train_config, train_loader=train_loader, val_loader=val_loader)
+    trainer = MultiTokenTrainer(
+        config=train_config, train_loader=train_loader, val_loader=val_loader
+    )
     trainer.train_loop(train_loader, val_loader)
 
 

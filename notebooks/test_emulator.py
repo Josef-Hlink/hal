@@ -48,7 +48,10 @@ def multishine(ai_state: melee.PlayerState) -> TensorDict:
 
         return convert_to_tensordict(inputs)
 
-    shine_start = ai_state.action == enums.Action.DOWN_B_STUN or ai_state.action == enums.Action.DOWN_B_GROUND_START
+    shine_start = (
+        ai_state.action == enums.Action.DOWN_B_STUN
+        or ai_state.action == enums.Action.DOWN_B_GROUND_START
+    )
 
     if shine_start and ai_state.action_frame >= 4 and ai_state.on_ground:
         # Jump out of shine

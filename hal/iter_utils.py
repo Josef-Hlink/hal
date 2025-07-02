@@ -6,7 +6,9 @@ from typing import TypeVar
 T = TypeVar("T")
 
 
-def generate_chunks(iterable: Iterable[T], chunk_size: int) -> Generator[Tuple[T, ...], None, None]:
+def generate_chunks(
+    iterable: Iterable[T], chunk_size: int
+) -> Generator[Tuple[T, ...], None, None]:
     """Yield successive n-sized chunks from any iterable"""
     chunk = []
     for item in iterable:

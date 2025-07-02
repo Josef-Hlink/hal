@@ -55,7 +55,9 @@ def union(array_1: torch.Tensor, array_2: torch.Tensor) -> torch.Tensor:
     return array_1 | array_2
 
 
-def normalize_and_embed_fourier(array: torch.Tensor, stats: FeatureStats, dim: int = 8) -> torch.Tensor:
+def normalize_and_embed_fourier(
+    array: torch.Tensor, stats: FeatureStats, dim: int = 8
+) -> torch.Tensor:
     """Normalize then embed values at various frequencies."""
     normalized = normalize(array, stats)
     frequencies = 1024 * torch.linspace(0, -torch.tensor(10000.0).log(), dim // 2).exp()
@@ -71,7 +73,9 @@ def offset(array: torch.Tensor, stats: FeatureStats) -> torch.Tensor:
 ### CONTROLLER / TARGETS
 
 
-def preprocess_target_features(sample_T: TensorDict, ego: Player, target_config: TargetConfig) -> TensorDict:
+def preprocess_target_features(
+    sample_T: TensorDict, ego: Player, target_config: TargetConfig
+) -> TensorDict:
     processed_features: Dict[str, torch.Tensor] = {}
 
     for feature_name, transformation in target_config.transformation_by_target.items():
@@ -100,7 +104,11 @@ def convert_multi_hot_to_one_hot(buttons_LD: np.ndarray) -> np.ndarray:
     prev_buttons = set()
     if len(multi_pressed) > 0:
         first_multi_pressed = multi_pressed[0]
-        prev_buttons = set(np.where(buttons_LD[first_multi_pressed - 1] == 1)[0]) if first_multi_pressed > 0 else set()
+        prev_buttons = (
+            set(np.where(buttons_LD[first_multi_pressed - 1] == 1)[0])
+            if first_multi_pressed > 0
+            else set()
+        )
 
     for i in multi_pressed:
         curr_press = buttons_LD[i]
@@ -184,7 +192,9 @@ def get_closest_1D_cluster(x: np.ndarray, cluster_centers: np.ndarray) -> np.nda
     return np.argmin(distances, axis=1)  # Shape: (L,)
 
 
-def get_closest_1D_cluster_multiclass(x: np.ndarray, cluster_centers: np.ndarray) -> np.ndarray:
+def get_closest_1D_cluster_multiclass(
+    x: np.ndarray, cluster_centers: np.ndarray
+) -> np.ndarray:
     """
     Calculate the closest point in cluster_centers for given x values.
 
@@ -206,7 +216,9 @@ def get_closest_1D_cluster_multiclass(x: np.ndarray, cluster_centers: np.ndarray
     return result
 
 
-def get_closest_2D_cluster(x: np.ndarray, y: np.ndarray, cluster_centers: np.ndarray) -> np.ndarray:
+def get_closest_2D_cluster(
+    x: np.ndarray, y: np.ndarray, cluster_centers: np.ndarray
+) -> np.ndarray:
     """
     Calculate the closest point in cluster_centers for given x and y values.
 
@@ -240,48 +252,72 @@ def concatenate_main_stick(sample: TensorDict, player: str) -> torch.Tensor:
 def encode_main_stick_one_hot_coarse(sample: TensorDict, player: str) -> torch.Tensor:
     main_stick_x = sample[f"{player}_main_stick_x"]
     main_stick_y = sample[f"{player}_main_stick_y"]
-    main_stick_clusters = get_closest_2D_cluster(main_stick_x, main_stick_y, STICK_XY_CLUSTER_CENTERS_V0)
-    one_hot_main_stick = one_hot_from_int(main_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V0))
+    main_stick_clusters = get_closest_2D_cluster(
+        main_stick_x, main_stick_y, STICK_XY_CLUSTER_CENTERS_V0
+    )
+    one_hot_main_stick = one_hot_from_int(
+        main_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V0)
+    )
     return torch.tensor(one_hot_main_stick, dtype=torch.float32)
 
 
 def encode_main_stick_one_hot_fine(sample: TensorDict, player: str) -> torch.Tensor:
     main_stick_x = sample[f"{player}_main_stick_x"]
     main_stick_y = sample[f"{player}_main_stick_y"]
-    main_stick_clusters = get_closest_2D_cluster(main_stick_x, main_stick_y, STICK_XY_CLUSTER_CENTERS_V2)
-    one_hot_main_stick = one_hot_from_int(main_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V2))
+    main_stick_clusters = get_closest_2D_cluster(
+        main_stick_x, main_stick_y, STICK_XY_CLUSTER_CENTERS_V2
+    )
+    one_hot_main_stick = one_hot_from_int(
+        main_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V2)
+    )
     return torch.tensor(one_hot_main_stick, dtype=torch.float32)
 
 
 def encode_main_stick_one_hot_finer(sample: TensorDict, player: str) -> torch.Tensor:
     main_stick_x = sample[f"{player}_main_stick_x"]
     main_stick_y = sample[f"{player}_main_stick_y"]
-    main_stick_clusters = get_closest_2D_cluster(main_stick_x, main_stick_y, STICK_XY_CLUSTER_CENTERS_V3)
-    one_hot_main_stick = one_hot_from_int(main_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V3))
+    main_stick_clusters = get_closest_2D_cluster(
+        main_stick_x, main_stick_y, STICK_XY_CLUSTER_CENTERS_V3
+    )
+    one_hot_main_stick = one_hot_from_int(
+        main_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V3)
+    )
     return torch.tensor(one_hot_main_stick, dtype=torch.float32)
 
 
 def encode_c_stick_one_hot_coarse(sample: TensorDict, player: str) -> torch.Tensor:
     c_stick_x = sample[f"{player}_c_stick_x"]
     c_stick_y = sample[f"{player}_c_stick_y"]
-    c_stick_clusters = get_closest_2D_cluster(c_stick_x, c_stick_y, STICK_XY_CLUSTER_CENTERS_V0)
-    one_hot_c_stick = one_hot_from_int(c_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V0))
+    c_stick_clusters = get_closest_2D_cluster(
+        c_stick_x, c_stick_y, STICK_XY_CLUSTER_CENTERS_V0
+    )
+    one_hot_c_stick = one_hot_from_int(
+        c_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V0)
+    )
     return torch.tensor(one_hot_c_stick, dtype=torch.float32)
 
 
 def encode_c_stick_one_hot_coarser(sample: TensorDict, player: str) -> torch.Tensor:
     c_stick_x = sample[f"{player}_c_stick_x"]
     c_stick_y = sample[f"{player}_c_stick_y"]
-    c_stick_clusters = get_closest_2D_cluster(c_stick_x, c_stick_y, STICK_XY_CLUSTER_CENTERS_V0_1)
-    one_hot_c_stick = one_hot_from_int(c_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V0_1))
+    c_stick_clusters = get_closest_2D_cluster(
+        c_stick_x, c_stick_y, STICK_XY_CLUSTER_CENTERS_V0_1
+    )
+    one_hot_c_stick = one_hot_from_int(
+        c_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V0_1)
+    )
     return torch.tensor(one_hot_c_stick, dtype=torch.float32)
 
 
 def encode_c_stick_one_hot_fine(sample: TensorDict, player: str) -> torch.Tensor:
     c_stick_x = sample[f"{player}_c_stick_x"]
     c_stick_y = sample[f"{player}_c_stick_y"]
-    c_stick_clusters = get_closest_2D_cluster(c_stick_x, c_stick_y, STICK_XY_CLUSTER_CENTERS_V1)
-    one_hot_c_stick = one_hot_from_int(c_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V1))
+    c_stick_clusters = get_closest_2D_cluster(
+        c_stick_x, c_stick_y, STICK_XY_CLUSTER_CENTERS_V1
+    )
+    one_hot_c_stick = one_hot_from_int(
+        c_stick_clusters, len(STICK_XY_CLUSTER_CENTERS_V1)
+    )
     return torch.tensor(one_hot_c_stick, dtype=torch.float32)
 
 
@@ -299,12 +335,16 @@ def encode_buttons_one_hot(sample: TensorDict, player: str) -> torch.Tensor:
     shoulder = button_l | button_r
     no_button = ~(button_a | button_b | jump | button_z | shoulder)
 
-    stacked_buttons = torch.stack((button_a, button_b, jump, button_z, shoulder, no_button), dim=-1)
+    stacked_buttons = torch.stack(
+        (button_a, button_b, jump, button_z, shoulder, no_button), dim=-1
+    )
     one_hot_buttons = convert_multi_hot_to_one_hot(stacked_buttons.numpy())
     return torch.tensor(one_hot_buttons, dtype=torch.float32)
 
 
-def encode_buttons_one_hot_early_release(sample: TensorDict, player: str) -> torch.Tensor:
+def encode_buttons_one_hot_early_release(
+    sample: TensorDict, player: str
+) -> torch.Tensor:
     """Combine X/Y and L/R buttons, simplify overlapping button presses by releasing all but most recent press."""
     button_a = sample[f"{player}_button_a"].bool()
     button_b = sample[f"{player}_button_b"].bool()
@@ -318,8 +358,12 @@ def encode_buttons_one_hot_early_release(sample: TensorDict, player: str) -> tor
     shoulder = button_l | button_r
     no_button = ~(button_a | button_b | jump | button_z | shoulder)
 
-    stacked_buttons = torch.stack((button_a, button_b, jump, button_z, shoulder, no_button), dim=-1)
-    one_hot_buttons = convert_multi_hot_to_one_hot_early_release(stacked_buttons.numpy())
+    stacked_buttons = torch.stack(
+        (button_a, button_b, jump, button_z, shoulder, no_button), dim=-1
+    )
+    one_hot_buttons = convert_multi_hot_to_one_hot_early_release(
+        stacked_buttons.numpy()
+    )
     return torch.tensor(one_hot_buttons, dtype=torch.float32)
 
 
@@ -331,10 +375,14 @@ def encode_original_buttons_multi_hot(sample: TensorDict, player: str) -> torch.
     button_z = sample[f"{player}_button_z"].float()
     button_l = sample[f"{player}_button_l"].float()
     button_r = sample[f"{player}_button_r"].float()
-    return torch.stack((button_a, button_b, button_x, button_y, button_z, button_l, button_r), dim=-1)
+    return torch.stack(
+        (button_a, button_b, button_x, button_y, button_z, button_l, button_r), dim=-1
+    )
 
 
-def encode_original_buttons_one_hot_no_shoulder(sample: TensorDict, player: str) -> torch.Tensor:
+def encode_original_buttons_one_hot_no_shoulder(
+    sample: TensorDict, player: str
+) -> torch.Tensor:
     button_a = sample[f"{player}_button_a"].bool()
     button_b = sample[f"{player}_button_b"].bool()
     button_x = sample[f"{player}_button_x"].bool()
@@ -343,8 +391,12 @@ def encode_original_buttons_one_hot_no_shoulder(sample: TensorDict, player: str)
 
     no_button = ~(button_a | button_b | button_x | button_y | button_z)
 
-    stacked_buttons = torch.stack((button_a, button_b, button_x, button_y, button_z, no_button), dim=-1)
-    one_hot_buttons = convert_multi_hot_to_one_hot_early_release(stacked_buttons.numpy())
+    stacked_buttons = torch.stack(
+        (button_a, button_b, button_x, button_y, button_z, no_button), dim=-1
+    )
+    one_hot_buttons = convert_multi_hot_to_one_hot_early_release(
+        stacked_buttons.numpy()
+    )
     return torch.tensor(one_hot_buttons, dtype=torch.float32)
 
 
@@ -359,12 +411,16 @@ def encode_buttons_one_hot_no_shoulder(sample: TensorDict, player: str) -> torch
     jump = button_x | button_y
     no_button = ~(button_a | button_b | jump | button_z)
 
-    stacked_buttons = torch.stack((button_a, button_b, jump, button_z, no_button), dim=-1)
+    stacked_buttons = torch.stack(
+        (button_a, button_b, jump, button_z, no_button), dim=-1
+    )
     one_hot_buttons = convert_multi_hot_to_one_hot(stacked_buttons.numpy())
     return torch.tensor(one_hot_buttons, dtype=torch.float32)
 
 
-def encode_buttons_one_hot_no_shoulder_early_release(sample: TensorDict, player: str) -> torch.Tensor:
+def encode_buttons_one_hot_no_shoulder_early_release(
+    sample: TensorDict, player: str
+) -> torch.Tensor:
     """Combine X/Y, omit L/R, take most recent button press and release all older button presses."""
     button_a = sample[f"{player}_button_a"].bool()
     button_b = sample[f"{player}_button_b"].bool()
@@ -375,8 +431,12 @@ def encode_buttons_one_hot_no_shoulder_early_release(sample: TensorDict, player:
     jump = button_x | button_y
     no_button = ~(button_a | button_b | jump | button_z)
 
-    stacked_buttons = torch.stack((button_a, button_b, jump, button_z, no_button), dim=-1)
-    one_hot_buttons = convert_multi_hot_to_one_hot_early_release(stacked_buttons.numpy())
+    stacked_buttons = torch.stack(
+        (button_a, button_b, jump, button_z, no_button), dim=-1
+    )
+    one_hot_buttons = convert_multi_hot_to_one_hot_early_release(
+        stacked_buttons.numpy()
+    )
     return torch.tensor(one_hot_buttons, dtype=torch.float32)
 
 
@@ -393,16 +453,24 @@ def encode_shoulder_one_hot_coarse(sample: TensorDict, player: str) -> torch.Ten
     shoulder_r = sample[f"{player}_r_shoulder"]
     shoulder = np.max(np.stack([shoulder_l, shoulder_r], axis=-1), axis=-1)
     shoulder_clusters = get_closest_1D_cluster(shoulder, SHOULDER_CLUSTER_CENTERS_V0)
-    one_hot_shoulder = one_hot_from_int(shoulder_clusters, len(SHOULDER_CLUSTER_CENTERS_V0))
+    one_hot_shoulder = one_hot_from_int(
+        shoulder_clusters, len(SHOULDER_CLUSTER_CENTERS_V0)
+    )
     return torch.tensor(one_hot_shoulder, dtype=torch.float32)
 
 
-def encode_original_shoulder_one_hot_finer(sample: TensorDict, player: str) -> torch.Tensor:
+def encode_original_shoulder_one_hot_finer(
+    sample: TensorDict, player: str
+) -> torch.Tensor:
     shoulder_l = sample[f"{player}_l_shoulder"]
     shoulder_r = sample[f"{player}_r_shoulder"]
     shoulder = np.stack([shoulder_l, shoulder_r], axis=-1)
-    shoulder_clusters = get_closest_1D_cluster_multiclass(shoulder, SHOULDER_CLUSTER_CENTERS_V1)
-    one_hot_shoulder = one_hot_from_int(shoulder_clusters, len(SHOULDER_CLUSTER_CENTERS_V1))
+    shoulder_clusters = get_closest_1D_cluster_multiclass(
+        shoulder, SHOULDER_CLUSTER_CENTERS_V1
+    )
+    one_hot_shoulder = one_hot_from_int(
+        shoulder_clusters, len(SHOULDER_CLUSTER_CENTERS_V1)
+    )
     return torch.tensor(one_hot_shoulder, dtype=torch.float32)
 
 
@@ -412,25 +480,33 @@ def encode_shoulder_one_hot(sample: TensorDict, player: str) -> torch.Tensor:
     shoulder_r = sample[f"{player}_r_shoulder"]
     shoulder = np.max(np.stack([shoulder_l, shoulder_r], axis=-1), axis=-1)
     shoulder_clusters = get_closest_1D_cluster(shoulder, SHOULDER_CLUSTER_CENTERS_V2)
-    one_hot_shoulder = one_hot_from_int(shoulder_clusters, len(SHOULDER_CLUSTER_CENTERS_V2))
+    one_hot_shoulder = one_hot_from_int(
+        shoulder_clusters, len(SHOULDER_CLUSTER_CENTERS_V2)
+    )
     return torch.tensor(one_hot_shoulder, dtype=torch.float32)
 
 
 def encode_shoulder_l_one_hot(sample: TensorDict, player: str) -> torch.Tensor:
     shoulder_l = sample[f"{player}_l_shoulder"]
     shoulder_clusters = get_closest_1D_cluster(shoulder_l, SHOULDER_CLUSTER_CENTERS_V2)
-    one_hot_shoulder = one_hot_from_int(shoulder_clusters, len(SHOULDER_CLUSTER_CENTERS_V2))
+    one_hot_shoulder = one_hot_from_int(
+        shoulder_clusters, len(SHOULDER_CLUSTER_CENTERS_V2)
+    )
     return torch.tensor(one_hot_shoulder, dtype=torch.float32)
 
 
 def encode_shoulder_r_one_hot(sample: TensorDict, player: str) -> torch.Tensor:
     shoulder_r = sample[f"{player}_r_shoulder"]
     shoulder_clusters = get_closest_1D_cluster(shoulder_r, SHOULDER_CLUSTER_CENTERS_V2)
-    one_hot_shoulder = one_hot_from_int(shoulder_clusters, len(SHOULDER_CLUSTER_CENTERS_V2))
+    one_hot_shoulder = one_hot_from_int(
+        shoulder_clusters, len(SHOULDER_CLUSTER_CENTERS_V2)
+    )
     return torch.tensor(one_hot_shoulder, dtype=torch.float32)
 
 
-def concat_controller_inputs(sample_T: TensorDict, ego: Player, target_config: TargetConfig) -> torch.Tensor:
+def concat_controller_inputs(
+    sample_T: TensorDict, ego: Player, target_config: TargetConfig
+) -> torch.Tensor:
     controller_feats = preprocess_target_features(sample_T, ego, target_config)
     return torch.cat(list(controller_feats.values()), dim=-1)
 
@@ -443,7 +519,9 @@ def get_returns(sample: TensorDict, player: str) -> torch.Tensor:
 ### POSTPROCESSING MODEL PREDICTIONS
 
 
-def sample_main_stick_coarse(pred_C: TensorDict, temperature: float = 1.0) -> tuple[float, float]:
+def sample_main_stick_coarse(
+    pred_C: TensorDict, temperature: float = 1.0
+) -> tuple[float, float]:
     main_stick_probs = torch.softmax(pred_C["main_stick"] / temperature, dim=-1)
     main_stick_cluster_idx = torch.multinomial(main_stick_probs, num_samples=1)
     main_stick_x, main_stick_y = torch.split(
@@ -453,23 +531,33 @@ def sample_main_stick_coarse(pred_C: TensorDict, temperature: float = 1.0) -> tu
     return main_stick_x.item(), main_stick_y.item()
 
 
-def sample_c_stick_coarse(pred_C: TensorDict, temperature: float = 1.0) -> tuple[float, float]:
+def sample_c_stick_coarse(
+    pred_C: TensorDict, temperature: float = 1.0
+) -> tuple[float, float]:
     c_stick_probs = torch.softmax(pred_C["c_stick"] / temperature, dim=-1)
     c_stick_cluster_idx = torch.multinomial(c_stick_probs, num_samples=1)
-    c_stick_x, c_stick_y = torch.split(torch.tensor(STICK_XY_CLUSTER_CENTERS_V0[c_stick_cluster_idx]), 1, dim=-1)
+    c_stick_x, c_stick_y = torch.split(
+        torch.tensor(STICK_XY_CLUSTER_CENTERS_V0[c_stick_cluster_idx]), 1, dim=-1
+    )
 
     return c_stick_x.item(), c_stick_y.item()
 
 
-def sample_c_stick_coarser(pred_C: TensorDict, temperature: float = 1.0) -> tuple[float, float]:
+def sample_c_stick_coarser(
+    pred_C: TensorDict, temperature: float = 1.0
+) -> tuple[float, float]:
     c_stick_probs = torch.softmax(pred_C["c_stick"] / temperature, dim=-1)
     c_stick_cluster_idx = torch.multinomial(c_stick_probs, num_samples=1)
-    c_stick_x, c_stick_y = torch.split(torch.tensor(STICK_XY_CLUSTER_CENTERS_V0_1[c_stick_cluster_idx]), 1, dim=-1)
+    c_stick_x, c_stick_y = torch.split(
+        torch.tensor(STICK_XY_CLUSTER_CENTERS_V0_1[c_stick_cluster_idx]), 1, dim=-1
+    )
 
     return c_stick_x.item(), c_stick_y.item()
 
 
-def sample_main_stick_fine(pred_C: TensorDict, temperature: float = 1.0) -> tuple[float, float]:
+def sample_main_stick_fine(
+    pred_C: TensorDict, temperature: float = 1.0
+) -> tuple[float, float]:
     main_stick_probs = torch.softmax(pred_C["main_stick"] / temperature, dim=-1)
     main_stick_cluster_idx = torch.multinomial(main_stick_probs, num_samples=1)
     main_stick_x, main_stick_y = torch.split(
@@ -479,7 +567,9 @@ def sample_main_stick_fine(pred_C: TensorDict, temperature: float = 1.0) -> tupl
     return main_stick_x.item(), main_stick_y.item()
 
 
-def sample_main_stick_finer(pred_C: TensorDict, temperature: float = 1.0) -> tuple[float, float]:
+def sample_main_stick_finer(
+    pred_C: TensorDict, temperature: float = 1.0
+) -> tuple[float, float]:
     main_stick_probs = torch.softmax(pred_C["main_stick"] / temperature, dim=-1)
     main_stick_cluster_idx = torch.multinomial(main_stick_probs, num_samples=1)
     main_stick_x, main_stick_y = torch.split(
@@ -489,10 +579,14 @@ def sample_main_stick_finer(pred_C: TensorDict, temperature: float = 1.0) -> tup
     return main_stick_x.item(), main_stick_y.item()
 
 
-def sample_c_stick_fine(pred_C: TensorDict, temperature: float = 1.0) -> tuple[float, float]:
+def sample_c_stick_fine(
+    pred_C: TensorDict, temperature: float = 1.0
+) -> tuple[float, float]:
     c_stick_probs = torch.softmax(pred_C["c_stick"] / temperature, dim=-1)
     c_stick_cluster_idx = torch.multinomial(c_stick_probs, num_samples=1)
-    c_stick_x, c_stick_y = torch.split(torch.tensor(STICK_XY_CLUSTER_CENTERS_V1[c_stick_cluster_idx]), 1, dim=-1)
+    c_stick_x, c_stick_y = torch.split(
+        torch.tensor(STICK_XY_CLUSTER_CENTERS_V1[c_stick_cluster_idx]), 1, dim=-1
+    )
 
     return c_stick_x.item(), c_stick_y.item()
 
@@ -504,21 +598,27 @@ def sample_single_button(pred_C: TensorDict, temperature: float = 1.0) -> List[s
     return [button]
 
 
-def sample_single_button_no_shoulder(pred_C: TensorDict, temperature: float = 1.0) -> List[str]:
+def sample_single_button_no_shoulder(
+    pred_C: TensorDict, temperature: float = 1.0
+) -> List[str]:
     button_probs = torch.softmax(pred_C["buttons"] / temperature, dim=-1)
     button_idx = int(torch.multinomial(button_probs, num_samples=1).item())
     button = INCLUDED_BUTTONS_NO_SHOULDER[button_idx]
     return [button]
 
 
-def sample_original_single_button_no_shoulder(pred_C: TensorDict, temperature: float = 1.0) -> List[str]:
+def sample_original_single_button_no_shoulder(
+    pred_C: TensorDict, temperature: float = 1.0
+) -> List[str]:
     button_probs = torch.softmax(pred_C["buttons"] / temperature, dim=-1)
     button_idx = int(torch.multinomial(button_probs, num_samples=1).item())
     button = ORIGINAL_BUTTONS_NO_SHOULDER[button_idx]
     return [button]
 
 
-def sample_buttons_with_separate_shoulders(pred_C: TensorDict, temperature: float = 1.0) -> List[str]:
+def sample_buttons_with_separate_shoulders(
+    pred_C: TensorDict, temperature: float = 1.0
+) -> List[str]:
     button_probs = torch.softmax(pred_C["buttons"] / temperature, dim=-1)
     button_idx = int(torch.multinomial(button_probs, num_samples=1).item())
     buttons = [INCLUDED_BUTTONS_NO_SHOULDER[button_idx]]
@@ -531,7 +631,9 @@ def sample_buttons_with_separate_shoulders(pred_C: TensorDict, temperature: floa
     return buttons
 
 
-def threshold_independent_buttons(pred_C: TensorDict, threshold: float = 0.5) -> List[str]:
+def threshold_independent_buttons(
+    pred_C: TensorDict, threshold: float = 0.5
+) -> List[str]:
     """Take the logits of the buttons and threshold them independently."""
     button_logits = pred_C["buttons"]
     button_probs = torch.sigmoid(button_logits)
@@ -543,7 +645,9 @@ def threshold_independent_buttons(pred_C: TensorDict, threshold: float = 0.5) ->
     return buttons
 
 
-def sample_analog_shoulder_coarse(pred_C: TensorDict, temperature: float = 1.0) -> float:
+def sample_analog_shoulder_coarse(
+    pred_C: TensorDict, temperature: float = 1.0
+) -> float:
     shoulder_probs = torch.softmax(pred_C["shoulder"] / temperature, dim=-1)
     shoulder_idx = int(torch.multinomial(shoulder_probs, num_samples=1).item())
     shoulder = SHOULDER_CLUSTER_CENTERS_V0[shoulder_idx]
@@ -570,7 +674,9 @@ def sample_digital_shoulder_r(pred_C: TensorDict, threshold: float = 0.5) -> flo
     return float(shoulder_pressed)
 
 
-def add_reward_to_episode(ndarrays_by_feature: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+def add_reward_to_episode(
+    ndarrays_by_feature: dict[str, np.ndarray],
+) -> dict[str, np.ndarray]:
     """
     Add basic stock-based reward to the episode.
 

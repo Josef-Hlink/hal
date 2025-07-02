@@ -9,7 +9,9 @@ from hal.training.losses import Gaussian2DPointsLoss
 
 # %%
 # Plot probability mass at each cluster center
-def plot_probs(actual_points: torch.Tensor, probs_BD: torch.Tensor, reference_points: torch.Tensor) -> None:
+def plot_probs(
+    actual_points: torch.Tensor, probs_BD: torch.Tensor, reference_points: torch.Tensor
+) -> None:
     for actual, probs in zip(actual_points.tolist(), probs_BD.tolist()):
         plt.figure(figsize=(8, 8))
         for (x, y), p in zip(reference_points, probs):
@@ -17,7 +19,9 @@ def plot_probs(actual_points: torch.Tensor, probs_BD: torch.Tensor, reference_po
         plt.xlim(0, 1)
         plt.ylim(0, 1)
         plt.grid(True)
-        plt.title(f"Probability Mass at Cluster Centers, x,y={round(actual[0], 2)},{round(actual[1], 2)}")
+        plt.title(
+            f"Probability Mass at Cluster Centers, x,y={round(actual[0], 2)},{round(actual[1], 2)}"
+        )
         plt.xlabel("X")
         plt.ylabel("Y")
         plt.axis("equal")
@@ -27,7 +31,9 @@ def plot_probs(actual_points: torch.Tensor, probs_BD: torch.Tensor, reference_po
 # %%
 loss_fn = Gaussian2DPointsLoss(torch.tensor(STICK_XY_CLUSTER_CENTERS_V0), sigma=0.1)
 
-actual_points = torch.tensor([[0.5, 0.5], [1.0, 0.5], [0.15, 0.3], [0.8338728, 0.13657573], [0.03, 0.5]])
+actual_points = torch.tensor(
+    [[0.5, 0.5], [1.0, 0.5], [0.15, 0.3], [0.8338728, 0.13657573], [0.03, 0.5]]
+)
 probs = loss_fn.transform_to_probs(actual_points)
 
 plot_probs(actual_points, probs, STICK_XY_CLUSTER_CENTERS_V0)

@@ -24,9 +24,13 @@ class GaussianLossTrainer(Trainer):
     Trains behavior cloning using cross-entropy loss against "soft" targets.
     """
 
-    def __init__(self, config: TrainConfig, train_loader: DataLoader, val_loader: DataLoader) -> None:
+    def __init__(
+        self, config: TrainConfig, train_loader: DataLoader, val_loader: DataLoader
+    ) -> None:
         super().__init__(config, train_loader, val_loader)
-        target_config = TargetConfigRegistry.get(self.config.data.target_preprocessing_fn)
+        target_config = TargetConfigRegistry.get(
+            self.config.data.target_preprocessing_fn
+        )
         self.gaussian_loss = Gaussian2DPointsLoss(
             torch.tensor(target_config.reference_points),
             sigma=target_config.sigma,
@@ -55,7 +59,9 @@ class GaussianLossTrainer(Trainer):
         pred = self.model(inputs)
         B, L, *_ = pred.shape
         # Important! Reshape the batch to 2D for proper CE loss calculation
-        loss_by_head = self.loss(pred.reshape(B * L, -1).squeeze(), targets.reshape(B * L, -1).squeeze())
+        loss_by_head = self.loss(
+            pred.reshape(B * L, -1).squeeze(), targets.reshape(B * L, -1).squeeze()
+        )
 
         return loss_by_head
 
@@ -69,7 +75,9 @@ def main(train_config: TrainConfig) -> None:
     torch.manual_seed(seed)
 
     train_loader, val_loader = get_dataloaders(train_config)
-    trainer = GaussianLossTrainer(config=train_config, train_loader=train_loader, val_loader=val_loader)
+    trainer = GaussianLossTrainer(
+        config=train_config, train_loader=train_loader, val_loader=val_loader
+    )
     trainer.train_loop(train_loader, val_loader)
 
 

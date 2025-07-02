@@ -1,4 +1,5 @@
 """Adapted from Karpathy's nanoGPT: https://github.com/karpathy/nanoGPT."""
+
 import math
 
 import attr
@@ -41,7 +42,9 @@ class CausalSelfAttention(nn.Module):
         # flash attention make GPU go brrrrr but support is only in PyTorch >= 2.0
         self.flash = hasattr(torch.nn.functional, "scaled_dot_product_attention")
         if not self.flash:
-            print("WARNING: using slow attention. Flash Attention requires PyTorch >= 2.0")
+            print(
+                "WARNING: using slow attention. Flash Attention requires PyTorch >= 2.0"
+            )
             # causal mask to ensure that attention is only applied to the left in the input sequence
             self.register_buffer(
                 "bias",
@@ -51,19 +54,32 @@ class CausalSelfAttention(nn.Module):
             )
 
     def forward(self, x: torch.Tensor):
-        B, L, D = x.size()  # batch size, sequence length, embedding dimensionality (n_embd)
+        B, L, D = (
+            x.size()
+        )  # batch size, sequence length, embedding dimensionality (n_embd)
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
         q, k, v = self.c_attn(x).split(self.n_embd, dim=2)
-        k = k.view(B, L, self.n_head, D // self.n_head).transpose(1, 2)  # (B, nh, L, hs)
-        q = q.view(B, L, self.n_head, D // self.n_head).transpose(1, 2)  # (B, nh, L, hs)
-        v = v.view(B, L, self.n_head, D // self.n_head).transpose(1, 2)  # (B, nh, L, hs)
+        k = k.view(B, L, self.n_head, D // self.n_head).transpose(
+            1, 2
+        )  # (B, nh, L, hs)
+        q = q.view(B, L, self.n_head, D // self.n_head).transpose(
+            1, 2
+        )  # (B, nh, L, hs)
+        v = v.view(B, L, self.n_head, D // self.n_head).transpose(
+            1, 2
+        )  # (B, nh, L, hs)
 
         # causal self-attention; Self-attend: (B, nh, L, hs) x (B, nh, hs, L) -> (B, nh, L, L)
         if self.flash:
             # efficient attention using Flash Attention CUDA kernels
             y = torch.nn.functional.scaled_dot_product_attention(
-                q, k, v, attn_mask=None, dropout_p=self.dropout if self.training else 0, is_causal=True
+                q,
+                k,
+                v,
+                attn_mask=None,
+                dropout_p=self.dropout if self.training else 0,
+                is_causal=True,
             )
         else:
             # manual implementation of attention
@@ -72,7 +88,9 @@ class CausalSelfAttention(nn.Module):
             att = F.softmax(att, dim=-1)
             att = self.attn_dropout(att)
             y = att @ v  # (B, nh, L, L) x (B, nh, L, hs) -> (B, nh, L, hs)
-        y = y.transpose(1, 2).contiguous().view(B, L, D)  # re-assemble all head outputs side by side
+        y = (
+            y.transpose(1, 2).contiguous().view(B, L, D)
+        )  # re-assemble all head outputs side by side
 
         # output projection
         y = self.resid_dropout(self.c_proj(y))
@@ -144,7 +162,9 @@ class BaseGPT(nn.Module):
         # e.g. we may load a pretrained model checkpoint but want to use a smaller context at inference
         assert block_size <= self.block_size
         self.block_size = block_size
-        self.transformer.wpe.weight = nn.Parameter(self.transformer.wpe.weight[:block_size])
+        self.transformer.wpe.weight = nn.Parameter(
+            self.transformer.wpe.weight[:block_size]
+        )
         for block in self.transformer.h:
             if hasattr(block.attn, "bias"):
                 block.attn.bias = block.attn.bias[:, :, :block_size, :block_size]
@@ -187,9 +207,15 @@ class GPTv1(BaseGPT):
 
         # categorical input embeddings
         self.emb_config = self.preprocessor.data_config
-        self.stage_emb = nn.Embedding(self.emb_config.num_stages, self.emb_config.stage_embedding_dim)
-        self.character_emb = nn.Embedding(self.emb_config.num_characters, self.emb_config.character_embedding_dim)
-        self.action_emb = nn.Embedding(self.emb_config.num_actions, self.emb_config.action_embedding_dim)
+        self.stage_emb = nn.Embedding(
+            self.emb_config.num_stages, self.emb_config.stage_embedding_dim
+        )
+        self.character_emb = nn.Embedding(
+            self.emb_config.num_characters, self.emb_config.character_embedding_dim
+        )
+        self.action_emb = nn.Embedding(
+            self.emb_config.num_actions, self.emb_config.action_embedding_dim
+        )
 
         self.transformer = nn.ModuleDict(
             dict(
@@ -202,17 +228,27 @@ class GPTv1(BaseGPT):
         )
 
         # output heads
-        self.target_shapes_by_head = self.preprocessor.target_config.target_shapes_by_head
-        self.button_head = nn.Linear(self.n_embd, self.target_shapes_by_head["buttons"][0], bias=False)
-        self.main_stick_head = nn.Linear(self.n_embd, self.target_shapes_by_head["main_stick"][0], bias=False)
-        self.c_stick_head = nn.Linear(self.n_embd, self.target_shapes_by_head["c_stick"][0], bias=False)
+        self.target_shapes_by_head = (
+            self.preprocessor.target_config.target_shapes_by_head
+        )
+        self.button_head = nn.Linear(
+            self.n_embd, self.target_shapes_by_head["buttons"][0], bias=False
+        )
+        self.main_stick_head = nn.Linear(
+            self.n_embd, self.target_shapes_by_head["main_stick"][0], bias=False
+        )
+        self.c_stick_head = nn.Linear(
+            self.n_embd, self.target_shapes_by_head["c_stick"][0], bias=False
+        )
 
         # init all weights
         self.apply(self._init_weights)
         # apply special scaled init to the residual projections, per GPT-2 paper
         for pn, p in self.named_parameters():
             if pn.endswith("c_proj.weight"):
-                torch.nn.init.normal_(p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer))
+                torch.nn.init.normal_(
+                    p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer)
+                )
 
     def _embed_inputs(self, inputs: TensorDict) -> torch.Tensor:
         return torch.cat(
@@ -229,7 +265,9 @@ class GPTv1(BaseGPT):
 
     def forward(self, inputs: TensorDict):
         B, L, _ = inputs["gamestate"].shape
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # concatenate embeddings and numerical inputs -> project down
         # TODO handle Nana, call embed twice and add down proj
@@ -237,7 +275,9 @@ class GPTv1(BaseGPT):
         proj_inputs_BLD = self.transformer.proj_down(combined_inputs_BLG)
 
         # position embeddings
-        pos_L = torch.arange(0, L, dtype=torch.long, device=next(self.parameters()).device)
+        pos_L = torch.arange(
+            0, L, dtype=torch.long, device=next(self.parameters()).device
+        )
         pos_emb_LD = self.transformer.wpe(pos_L)
 
         x_BLD = self.transformer.drop(proj_inputs_BLD + pos_emb_LD)
@@ -283,8 +323,12 @@ class GPTv2Controller(GPTv1):
 
         # re-define and re-initialize just the new output heads
         self.c_stick_head = nn.Linear(self.n_embd, c_stick_size, bias=False)
-        self.main_stick_head = nn.Linear(self.n_embd + c_stick_size, main_stick_size, bias=False)
-        self.button_head = nn.Linear(self.n_embd + main_stick_size + c_stick_size, button_size, bias=False)
+        self.main_stick_head = nn.Linear(
+            self.n_embd + c_stick_size, main_stick_size, bias=False
+        )
+        self.button_head = nn.Linear(
+            self.n_embd + main_stick_size + c_stick_size, button_size, bias=False
+        )
 
         for module in [self.main_stick_head, self.button_head, self.c_stick_head]:
             self._init_weights(module)
@@ -305,14 +349,18 @@ class GPTv2Controller(GPTv1):
 
     def forward(self, inputs: TensorDict):
         B, L, _ = inputs["gamestate"].shape
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # concatenate embeddings and numerical inputs -> project down
         combined_inputs_BLG = self._embed_inputs(inputs)
         proj_inputs_BLD = self.transformer.proj_down(combined_inputs_BLG)
 
         # position embeddings
-        pos_L = torch.arange(0, L, dtype=torch.long, device=next(self.parameters()).device)
+        pos_L = torch.arange(
+            0, L, dtype=torch.long, device=next(self.parameters()).device
+        )
         pos_emb_LD = self.transformer.wpe(pos_L)
 
         x_BLD = self.transformer.drop(proj_inputs_BLD + pos_emb_LD)
@@ -322,7 +370,9 @@ class GPTv2Controller(GPTv1):
 
         c_stick = self.c_stick_head(x_BLD)
         main_stick = self.main_stick_head(torch.cat((x_BLD, c_stick.detach()), dim=-1))
-        button = self.button_head(torch.cat((x_BLD, c_stick.detach(), main_stick.detach()), dim=-1))
+        button = self.button_head(
+            torch.cat((x_BLD, c_stick.detach(), main_stick.detach()), dim=-1)
+        )
 
         return TensorDict(
             {
@@ -345,9 +395,15 @@ class GPTv2_1Controller(BaseGPT):
 
         # categorical input embeddings
         self.emb_config = self.preprocessor.data_config
-        self.stage_emb = nn.Embedding(self.emb_config.num_stages, self.emb_config.stage_embedding_dim)
-        self.character_emb = nn.Embedding(self.emb_config.num_characters, self.emb_config.character_embedding_dim)
-        self.action_emb = nn.Embedding(self.emb_config.num_actions, self.emb_config.action_embedding_dim)
+        self.stage_emb = nn.Embedding(
+            self.emb_config.num_stages, self.emb_config.stage_embedding_dim
+        )
+        self.character_emb = nn.Embedding(
+            self.emb_config.num_characters, self.emb_config.character_embedding_dim
+        )
+        self.action_emb = nn.Embedding(
+            self.emb_config.num_actions, self.emb_config.action_embedding_dim
+        )
 
         self.transformer = nn.ModuleDict(
             dict(
@@ -360,7 +416,9 @@ class GPTv2_1Controller(BaseGPT):
         )
 
         # output heads
-        self.target_shapes_by_head = self.preprocessor.target_config.target_shapes_by_head
+        self.target_shapes_by_head = (
+            self.preprocessor.target_config.target_shapes_by_head
+        )
         main_stick_size = self.target_shapes_by_head["main_stick"][0]
         button_size = self.target_shapes_by_head["buttons"][0]
         c_stick_size = self.target_shapes_by_head["c_stick"][0]
@@ -394,7 +452,9 @@ class GPTv2_1Controller(BaseGPT):
         # apply special scaled init to the residual projections, per GPT-2 paper
         for pn, p in self.named_parameters():
             if pn.endswith("c_proj.weight"):
-                torch.nn.init.normal_(p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer))
+                torch.nn.init.normal_(
+                    p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer)
+                )
 
     def _embed_inputs(self, inputs: TensorDict) -> torch.Tensor:
         return torch.cat(
@@ -412,14 +472,18 @@ class GPTv2_1Controller(BaseGPT):
 
     def forward(self, inputs: TensorDict):
         B, L, _ = inputs["gamestate"].shape
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # concatenate embeddings and numerical inputs -> project down
         combined_inputs_BLG = self._embed_inputs(inputs)
         proj_inputs_BLD = self.transformer.proj_down(combined_inputs_BLG)
 
         # position embeddings
-        pos_L = torch.arange(0, L, dtype=torch.long, device=next(self.parameters()).device)
+        pos_L = torch.arange(
+            0, L, dtype=torch.long, device=next(self.parameters()).device
+        )
         pos_emb_LD = self.transformer.wpe(pos_L)
 
         x_BLD = self.transformer.drop(proj_inputs_BLD + pos_emb_LD)
@@ -429,7 +493,9 @@ class GPTv2_1Controller(BaseGPT):
 
         c_stick = self.c_stick_head(x_BLD)
         main_stick = self.main_stick_head(torch.cat((x_BLD, c_stick.detach()), dim=-1))
-        button = self.button_head(torch.cat((x_BLD, c_stick.detach(), main_stick.detach()), dim=-1))
+        button = self.button_head(
+            torch.cat((x_BLD, c_stick.detach(), main_stick.detach()), dim=-1)
+        )
 
         return TensorDict(
             {
@@ -453,7 +519,9 @@ class RelativePosition(nn.Module):
         super().__init__()
         self.head_dim = head_dim
         self.max_relative_position = max_relative_position
-        self.embeddings_table = nn.Parameter(torch.Tensor(max_relative_position * 2 + 1, head_dim))
+        self.embeddings_table = nn.Parameter(
+            torch.Tensor(max_relative_position * 2 + 1, head_dim)
+        )
         nn.init.xavier_uniform_(self.embeddings_table)
 
     def forward(self, length_q: int, length_k: int) -> torch.Tensor:
@@ -463,7 +531,9 @@ class RelativePosition(nn.Module):
             range_vec_q = torch.arange(length_q)
             range_vec_k = torch.arange(length_k)
             distance_mat = range_vec_k[None, :] - range_vec_q[:, None]
-            distance_mat_clipped = torch.clamp(distance_mat, -self.max_relative_position, self.max_relative_position)
+            distance_mat_clipped = torch.clamp(
+                distance_mat, -self.max_relative_position, self.max_relative_position
+            )
             final_mat = (distance_mat_clipped + self.max_relative_position).long()
         embeddings = self.embeddings_table[final_mat]
 
@@ -512,14 +582,20 @@ class CausalSelfAttentionRelativePosition(nn.Module):
         # causal mask to ensure that attention is only applied to the left in the input sequence
         self.register_buffer(
             "bias",
-            torch.tril(torch.ones(self.block_size, self.block_size)).view(1, 1, self.block_size, self.block_size),
+            torch.tril(torch.ones(self.block_size, self.block_size)).view(
+                1, 1, self.block_size, self.block_size
+            ),
         )
         # disable flash attention,
         self.flash = False
 
     def forward(self, x: torch.Tensor):
-        B, L, D = x.size()  # batch size, sequence length, embedding dimensionality (n_embd)
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        B, L, D = (
+            x.size()
+        )  # batch size, sequence length, embedding dimensionality (n_embd)
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
         q, k, v = self.c_attn(x).split(self.n_embd, dim=2)
@@ -534,14 +610,18 @@ class CausalSelfAttentionRelativePosition(nn.Module):
         Srel = skew(QEr)  # (B, nh, L, L)
 
         # causal self-attention
-        QK_t = q @ k.transpose(-2, -1)  # (B, nh, L, hs) x (B, nh, hs, L) -> (B, nh, L, L)
+        QK_t = q @ k.transpose(
+            -2, -1
+        )  # (B, nh, L, hs) x (B, nh, hs, L) -> (B, nh, L, L)
         scale = 1.0 / math.sqrt(k.size(-1))
         att = (QK_t + Srel) * scale
         att = att.masked_fill(self.bias[:, :, :L, :L] == 0, float("-inf"))
         att = F.softmax(att, dim=-1)
         att = self.attn_dropout(att)
         y = att @ v  # (B, nh, L, L) x (B, nh, L, hs) -> (B, nh, L, hs)
-        y = y.transpose(1, 2).contiguous().view(B, L, D)  # re-assemble all head outputs side by side
+        y = (
+            y.transpose(1, 2).contiguous().view(B, L, D)
+        )  # re-assemble all head outputs side by side
 
         # output projection
         y = self.resid_dropout(self.c_proj(y))
@@ -575,31 +655,52 @@ class GPTv3(BaseGPT):
 
         # categorical input embeddings
         self.emb_config = self.preprocessor.data_config
-        self.stage_emb = nn.Embedding(self.emb_config.num_stages, self.emb_config.stage_embedding_dim)
-        self.character_emb = nn.Embedding(self.emb_config.num_characters, self.emb_config.character_embedding_dim)
-        self.action_emb = nn.Embedding(self.emb_config.num_actions, self.emb_config.action_embedding_dim)
+        self.stage_emb = nn.Embedding(
+            self.emb_config.num_stages, self.emb_config.stage_embedding_dim
+        )
+        self.character_emb = nn.Embedding(
+            self.emb_config.num_characters, self.emb_config.character_embedding_dim
+        )
+        self.action_emb = nn.Embedding(
+            self.emb_config.num_actions, self.emb_config.action_embedding_dim
+        )
 
         self.transformer = nn.ModuleDict(
             dict(
                 proj_down=nn.Linear(self.input_size, gpt_config.n_embd),  # G -> D
                 drop=nn.Dropout(gpt_config.dropout),
-                h=nn.ModuleList([BlockRelativePosition(gpt_config) for _ in range(gpt_config.n_layer)]),
+                h=nn.ModuleList(
+                    [
+                        BlockRelativePosition(gpt_config)
+                        for _ in range(gpt_config.n_layer)
+                    ]
+                ),
                 ln_f=nn.LayerNorm(self.n_embd, bias=gpt_config.bias),
             )
         )
 
         # output heads
-        self.target_shapes_by_head = self.preprocessor.target_config.target_shapes_by_head
-        self.button_head = nn.Linear(self.n_embd, self.target_shapes_by_head["buttons"][0], bias=False)
-        self.main_stick_head = nn.Linear(self.n_embd, self.target_shapes_by_head["main_stick"][0], bias=False)
-        self.c_stick_head = nn.Linear(self.n_embd, self.target_shapes_by_head["c_stick"][0], bias=False)
+        self.target_shapes_by_head = (
+            self.preprocessor.target_config.target_shapes_by_head
+        )
+        self.button_head = nn.Linear(
+            self.n_embd, self.target_shapes_by_head["buttons"][0], bias=False
+        )
+        self.main_stick_head = nn.Linear(
+            self.n_embd, self.target_shapes_by_head["main_stick"][0], bias=False
+        )
+        self.c_stick_head = nn.Linear(
+            self.n_embd, self.target_shapes_by_head["c_stick"][0], bias=False
+        )
 
         # init all weights
         self.apply(self._init_weights)
         # apply special scaled init to the residual projections, per GPT-2 paper
         for pn, p in self.named_parameters():
             if pn.endswith("c_proj.weight"):
-                torch.nn.init.normal_(p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer))
+                torch.nn.init.normal_(
+                    p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer)
+                )
 
     def _embed_inputs(self, inputs: TensorDict) -> torch.Tensor:
         return torch.cat(
@@ -616,7 +717,9 @@ class GPTv3(BaseGPT):
 
     def forward(self, inputs: TensorDict):
         B, L, _ = inputs["gamestate"].shape
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # concatenate embeddings and numerical inputs -> project down
         combined_inputs_BLG = self._embed_inputs(inputs)
@@ -664,21 +767,34 @@ class GPTv4Controller(BaseGPT):
 
         # Categorical input embeddings
         self.emb_config = self.preprocessor.data_config
-        self.stage_emb = nn.Embedding(self.emb_config.num_stages, self.emb_config.stage_embedding_dim)
-        self.character_emb = nn.Embedding(self.emb_config.num_characters, self.emb_config.character_embedding_dim)
-        self.action_emb = nn.Embedding(self.emb_config.num_actions, self.emb_config.action_embedding_dim)
+        self.stage_emb = nn.Embedding(
+            self.emb_config.num_stages, self.emb_config.stage_embedding_dim
+        )
+        self.character_emb = nn.Embedding(
+            self.emb_config.num_characters, self.emb_config.character_embedding_dim
+        )
+        self.action_emb = nn.Embedding(
+            self.emb_config.num_actions, self.emb_config.action_embedding_dim
+        )
 
         self.transformer = nn.ModuleDict(
             dict(
                 proj_down=nn.Linear(self.input_size, gpt_config.n_embd),  # G -> D
                 drop=nn.Dropout(gpt_config.dropout),
-                h=nn.ModuleList([BlockRelativePosition(gpt_config) for _ in range(gpt_config.n_layer)]),
+                h=nn.ModuleList(
+                    [
+                        BlockRelativePosition(gpt_config)
+                        for _ in range(gpt_config.n_layer)
+                    ]
+                ),
                 ln_f=nn.LayerNorm(self.n_embd, bias=gpt_config.bias),
             )
         )
 
         # Output heads
-        self.target_shapes_by_head = self.preprocessor.target_config.target_shapes_by_head
+        self.target_shapes_by_head = (
+            self.preprocessor.target_config.target_shapes_by_head
+        )
         main_stick_size = self.target_shapes_by_head["main_stick"][0]
         button_size = self.target_shapes_by_head["buttons"][0]
         c_stick_size = self.target_shapes_by_head["c_stick"][0]
@@ -712,7 +828,9 @@ class GPTv4Controller(BaseGPT):
         # apply special scaled init to the residual projections, per GPT-2 paper
         for pn, p in self.named_parameters():
             if pn.endswith("c_proj.weight"):
-                torch.nn.init.normal_(p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer))
+                torch.nn.init.normal_(
+                    p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer)
+                )
 
     def _embed_inputs(self, inputs: TensorDict) -> torch.Tensor:
         return torch.cat(
@@ -730,7 +848,9 @@ class GPTv4Controller(BaseGPT):
 
     def forward(self, inputs: TensorDict):
         B, L, _ = inputs["gamestate"].shape
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # concatenate embeddings and numerical inputs -> project down
         combined_inputs_BLG = self._embed_inputs(inputs)
@@ -743,7 +863,9 @@ class GPTv4Controller(BaseGPT):
 
         c_stick = self.c_stick_head(x_BLD)
         main_stick = self.main_stick_head(torch.cat((x_BLD, c_stick.detach()), dim=-1))
-        button = self.button_head(torch.cat((x_BLD, c_stick.detach(), main_stick.detach()), dim=-1))
+        button = self.button_head(
+            torch.cat((x_BLD, c_stick.detach(), main_stick.detach()), dim=-1)
+        )
 
         return TensorDict(
             {
@@ -764,21 +886,34 @@ class GPTv5Controller(GPTv4Controller):
 
         # Categorical input embeddings
         self.emb_config = self.preprocessor.data_config
-        self.stage_emb = nn.Embedding(self.emb_config.num_stages, self.emb_config.stage_embedding_dim)
-        self.character_emb = nn.Embedding(self.emb_config.num_characters, self.emb_config.character_embedding_dim)
-        self.action_emb = nn.Embedding(self.emb_config.num_actions, self.emb_config.action_embedding_dim)
+        self.stage_emb = nn.Embedding(
+            self.emb_config.num_stages, self.emb_config.stage_embedding_dim
+        )
+        self.character_emb = nn.Embedding(
+            self.emb_config.num_characters, self.emb_config.character_embedding_dim
+        )
+        self.action_emb = nn.Embedding(
+            self.emb_config.num_actions, self.emb_config.action_embedding_dim
+        )
 
         self.transformer = nn.ModuleDict(
             dict(
                 proj_down=nn.Linear(self.input_size, gpt_config.n_embd),  # G -> D
                 drop=nn.Dropout(gpt_config.dropout),
-                h=nn.ModuleList([BlockRelativePosition(gpt_config) for _ in range(gpt_config.n_layer)]),
+                h=nn.ModuleList(
+                    [
+                        BlockRelativePosition(gpt_config)
+                        for _ in range(gpt_config.n_layer)
+                    ]
+                ),
                 ln_f=nn.LayerNorm(self.n_embd, bias=gpt_config.bias),
             )
         )
 
         # Output heads
-        self.target_shapes_by_head = self.preprocessor.target_config.target_shapes_by_head
+        self.target_shapes_by_head = (
+            self.preprocessor.target_config.target_shapes_by_head
+        )
         shoulder_output_size = self.target_shapes_by_head["shoulder"][0]
 
         c_stick_input_size = self.n_embd + shoulder_output_size
@@ -787,7 +922,12 @@ class GPTv5Controller(GPTv4Controller):
         main_stick_input_size = self.n_embd + shoulder_output_size + c_stick_output_size
         main_stick_output_size = self.target_shapes_by_head["main_stick"][0]
 
-        button_input_size = self.n_embd + shoulder_output_size + c_stick_output_size + main_stick_output_size
+        button_input_size = (
+            self.n_embd
+            + shoulder_output_size
+            + c_stick_output_size
+            + main_stick_output_size
+        )
         button_output_size = self.target_shapes_by_head["buttons"][0]
 
         # Put shoulder and c-stick first because they are less complex and they modify/override other inputs
@@ -824,11 +964,15 @@ class GPTv5Controller(GPTv4Controller):
         # apply special scaled init to the residual projections, per GPT-2 paper
         for pn, p in self.named_parameters():
             if pn.endswith("c_proj.weight"):
-                torch.nn.init.normal_(p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer))
+                torch.nn.init.normal_(
+                    p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer)
+                )
 
     def forward(self, inputs: TensorDict) -> TensorDict:
         B, L, _ = inputs["gamestate"].shape
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # Concatenate embeddings and numerical inputs -> project down
         combined_inputs_BLG = self._embed_inputs(inputs)
@@ -841,12 +985,17 @@ class GPTv5Controller(GPTv4Controller):
 
         # Detach to avoid multiplying gradient flow through earlier heads
         shoulder: torch.Tensor = self.shoulder_head(x_BLD)
-        c_stick: torch.Tensor = self.c_stick_head(torch.cat((x_BLD, shoulder.detach()), dim=-1))
+        c_stick: torch.Tensor = self.c_stick_head(
+            torch.cat((x_BLD, shoulder.detach()), dim=-1)
+        )
         main_stick: torch.Tensor = self.main_stick_head(
             torch.cat((x_BLD, shoulder.detach(), c_stick.detach()), dim=-1)
         )
         button: torch.Tensor = self.button_head(
-            torch.cat((x_BLD, shoulder.detach(), c_stick.detach(), main_stick.detach()), dim=-1)
+            torch.cat(
+                (x_BLD, shoulder.detach(), c_stick.detach(), main_stick.detach()),
+                dim=-1,
+            )
         )
 
         return TensorDict(
@@ -869,21 +1018,34 @@ class GPTv5_1Controller(GPTv4Controller):
 
         # Categorical input embeddings
         self.emb_config = self.preprocessor.data_config
-        self.stage_emb = nn.Embedding(self.emb_config.num_stages, self.emb_config.stage_embedding_dim)
-        self.character_emb = nn.Embedding(self.emb_config.num_characters, self.emb_config.character_embedding_dim)
-        self.action_emb = nn.Embedding(self.emb_config.num_actions, self.emb_config.action_embedding_dim)
+        self.stage_emb = nn.Embedding(
+            self.emb_config.num_stages, self.emb_config.stage_embedding_dim
+        )
+        self.character_emb = nn.Embedding(
+            self.emb_config.num_characters, self.emb_config.character_embedding_dim
+        )
+        self.action_emb = nn.Embedding(
+            self.emb_config.num_actions, self.emb_config.action_embedding_dim
+        )
 
         self.transformer = nn.ModuleDict(
             dict(
                 proj_down=nn.Linear(self.input_size, gpt_config.n_embd),  # G -> D
                 drop=nn.Dropout(gpt_config.dropout),
-                h=nn.ModuleList([BlockRelativePosition(gpt_config) for _ in range(gpt_config.n_layer)]),
+                h=nn.ModuleList(
+                    [
+                        BlockRelativePosition(gpt_config)
+                        for _ in range(gpt_config.n_layer)
+                    ]
+                ),
                 ln_f=nn.LayerNorm(self.n_embd, bias=gpt_config.bias),
             )
         )
 
         # Output heads
-        self.target_shapes_by_head = self.preprocessor.target_config.target_shapes_by_head
+        self.target_shapes_by_head = (
+            self.preprocessor.target_config.target_shapes_by_head
+        )
 
         c_stick_input_size = self.n_embd
         c_stick_output_size = self.target_shapes_by_head["c_stick"][0]
@@ -894,7 +1056,12 @@ class GPTv5_1Controller(GPTv4Controller):
         button_input_size = self.n_embd + c_stick_output_size + main_stick_output_size
         button_output_size = self.target_shapes_by_head["buttons"][0]
 
-        shoulder_input_size = self.n_embd + c_stick_output_size + main_stick_output_size + button_output_size
+        shoulder_input_size = (
+            self.n_embd
+            + c_stick_output_size
+            + main_stick_output_size
+            + button_output_size
+        )
         shoulder_output_size = self.target_shapes_by_head["shoulder"][0]
 
         # Put c-stick first because it is less complex and it modifies/overrides other inputs
@@ -931,11 +1098,15 @@ class GPTv5_1Controller(GPTv4Controller):
         # apply special scaled init to the residual projections, per GPT-2 paper
         for pn, p in self.named_parameters():
             if pn.endswith("c_proj.weight"):
-                torch.nn.init.normal_(p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer))
+                torch.nn.init.normal_(
+                    p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer)
+                )
 
     def forward(self, inputs: TensorDict) -> TensorDict:
         B, L, _ = inputs["gamestate"].shape
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # Concatenate embeddings and numerical inputs -> project down
         combined_inputs_BLG = self._embed_inputs(inputs)
@@ -1001,21 +1172,34 @@ class GPTv6Controller(GPTv4Controller):
 
         # Categorical input embeddings
         self.emb_config = self.preprocessor.data_config
-        self.stage_emb = nn.Embedding(self.emb_config.num_stages, self.emb_config.stage_embedding_dim)
-        self.character_emb = nn.Embedding(self.emb_config.num_characters, self.emb_config.character_embedding_dim)
-        self.action_emb = nn.Embedding(self.emb_config.num_actions, self.emb_config.action_embedding_dim)
+        self.stage_emb = nn.Embedding(
+            self.emb_config.num_stages, self.emb_config.stage_embedding_dim
+        )
+        self.character_emb = nn.Embedding(
+            self.emb_config.num_characters, self.emb_config.character_embedding_dim
+        )
+        self.action_emb = nn.Embedding(
+            self.emb_config.num_actions, self.emb_config.action_embedding_dim
+        )
 
         self.transformer = nn.ModuleDict(
             dict(
                 proj_down=nn.Linear(self.input_size, gpt_config.n_embd),  # G -> D
                 drop=nn.Dropout(gpt_config.dropout),
-                h=nn.ModuleList([BlockRelativePosition(gpt_config) for _ in range(gpt_config.n_layer)]),
+                h=nn.ModuleList(
+                    [
+                        BlockRelativePosition(gpt_config)
+                        for _ in range(gpt_config.n_layer)
+                    ]
+                ),
                 ln_f=nn.LayerNorm(self.n_embd, bias=gpt_config.bias),
             )
         )
 
         # Output heads
-        self.target_shapes_by_head = self.preprocessor.target_config.target_shapes_by_head
+        self.target_shapes_by_head = (
+            self.preprocessor.target_config.target_shapes_by_head
+        )
 
         c_stick_input_size = self.n_embd
         c_stick_output_size = self.target_shapes_by_head["c_stick"][0]
@@ -1026,7 +1210,12 @@ class GPTv6Controller(GPTv4Controller):
         button_input_size = self.n_embd + c_stick_output_size + main_stick_output_size
         button_output_size = self.target_shapes_by_head["buttons"][0]
 
-        analog_shoulder_input_size = self.n_embd + c_stick_output_size + main_stick_output_size + button_output_size
+        analog_shoulder_input_size = (
+            self.n_embd
+            + c_stick_output_size
+            + main_stick_output_size
+            + button_output_size
+        )
         analog_shoulder_output_size = self.target_shapes_by_head["analog_shoulder"][0]
 
         shoulder_l_input_size = (
@@ -1098,11 +1287,15 @@ class GPTv6Controller(GPTv4Controller):
         # apply special scaled init to the residual projections, per GPT-2 paper
         for pn, p in self.named_parameters():
             if pn.endswith("c_proj.weight"):
-                torch.nn.init.normal_(p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer))
+                torch.nn.init.normal_(
+                    p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer)
+                )
 
     def forward(self, inputs: TensorDict) -> TensorDict:
         B, L, _ = inputs["gamestate"].shape
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # Concatenate embeddings and numerical inputs -> project down
         combined_inputs_BLG = self._embed_inputs(inputs)
@@ -1185,17 +1378,28 @@ class GPTv6Controller(GPTv4Controller):
         )
 
 
-def sinusoidal_positional_encoding_1d(seq_len: int, d_model: int, device: torch.device | None = None) -> torch.Tensor:
+def sinusoidal_positional_encoding_1d(
+    seq_len: int, d_model: int, device: torch.device | None = None
+) -> torch.Tensor:
     """
     :param d_model: dimension of the model
     :param seq_len: length of positions
     :return: seq_len*d_model position matrix
     """
     if d_model % 2 != 0:
-        raise ValueError("Cannot use sin/cos positional encoding with " "odd dim (got dim={:d})".format(d_model))
+        raise ValueError(
+            "Cannot use sin/cos positional encoding with odd dim (got dim={:d})".format(
+                d_model
+            )
+        )
     pe = torch.zeros(seq_len, d_model, device=device)
     position = torch.arange(0, seq_len).unsqueeze(1)
-    div_term = torch.exp((torch.arange(0, d_model, 2, dtype=torch.float) * -(torch.tensor(10000.0).log() / d_model)))
+    div_term = torch.exp(
+        (
+            torch.arange(0, d_model, 2, dtype=torch.float)
+            * -(torch.tensor(10000.0).log() / d_model)
+        )
+    )
     pe[:, 0::2] = torch.sin(position.float() * div_term)
     pe[:, 1::2] = torch.cos(position.float() * div_term)
     return pe
@@ -1210,11 +1414,19 @@ class GPTv7(GPTv4Controller):
 
         # Categorical input embeddings
         self.emb_config = self.preprocessor.data_config
-        self.stage_emb = nn.Embedding(self.emb_config.num_stages, self.emb_config.stage_embedding_dim)
-        self.character_emb = nn.Embedding(self.emb_config.num_characters, self.emb_config.character_embedding_dim)
-        self.action_emb = nn.Embedding(self.emb_config.num_actions, self.emb_config.action_embedding_dim)
+        self.stage_emb = nn.Embedding(
+            self.emb_config.num_stages, self.emb_config.stage_embedding_dim
+        )
+        self.character_emb = nn.Embedding(
+            self.emb_config.num_characters, self.emb_config.character_embedding_dim
+        )
+        self.action_emb = nn.Embedding(
+            self.emb_config.num_actions, self.emb_config.action_embedding_dim
+        )
 
-        self.wpe = nn.Parameter(sinusoidal_positional_encoding_1d(self.block_size, gpt_config.n_embd))
+        self.wpe = nn.Parameter(
+            sinusoidal_positional_encoding_1d(self.block_size, gpt_config.n_embd)
+        )
         self.transformer = nn.ModuleDict(
             dict(
                 proj_down=nn.Linear(self.input_size, gpt_config.n_embd),  # G -> D
@@ -1225,7 +1437,9 @@ class GPTv7(GPTv4Controller):
         )
 
         # Output heads
-        self.target_shapes_by_head = self.preprocessor.target_config.target_shapes_by_head
+        self.target_shapes_by_head = (
+            self.preprocessor.target_config.target_shapes_by_head
+        )
         shoulder_output_size = self.target_shapes_by_head["shoulder"][0]
 
         c_stick_input_size = self.n_embd + shoulder_output_size
@@ -1234,7 +1448,12 @@ class GPTv7(GPTv4Controller):
         main_stick_input_size = self.n_embd + shoulder_output_size + c_stick_output_size
         main_stick_output_size = self.target_shapes_by_head["main_stick"][0]
 
-        button_input_size = self.n_embd + shoulder_output_size + c_stick_output_size + main_stick_output_size
+        button_input_size = (
+            self.n_embd
+            + shoulder_output_size
+            + c_stick_output_size
+            + main_stick_output_size
+        )
         button_output_size = self.target_shapes_by_head["buttons"][0]
 
         # Put shoulder and c-stick first because they are less complex and they modify/override other inputs
@@ -1271,11 +1490,15 @@ class GPTv7(GPTv4Controller):
         # apply special scaled init to the residual projections, per GPT-2 paper
         for pn, p in self.named_parameters():
             if pn.endswith("c_proj.weight"):
-                torch.nn.init.normal_(p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer))
+                torch.nn.init.normal_(
+                    p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer)
+                )
 
     def forward(self, inputs: TensorDict) -> TensorDict:
         B, L, _ = inputs["gamestate"].shape
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # Concatenate embeddings and numerical inputs -> project down
         combined_inputs_BLG = self._embed_inputs(inputs)
@@ -1291,12 +1514,17 @@ class GPTv7(GPTv4Controller):
 
         # Detach to avoid multiplying gradient flow through earlier heads
         shoulder: torch.Tensor = self.shoulder_head(x_BLD)
-        c_stick: torch.Tensor = self.c_stick_head(torch.cat((x_BLD, shoulder.detach()), dim=-1))
+        c_stick: torch.Tensor = self.c_stick_head(
+            torch.cat((x_BLD, shoulder.detach()), dim=-1)
+        )
         main_stick: torch.Tensor = self.main_stick_head(
             torch.cat((x_BLD, shoulder.detach(), c_stick.detach()), dim=-1)
         )
         button: torch.Tensor = self.button_head(
-            torch.cat((x_BLD, shoulder.detach(), c_stick.detach(), main_stick.detach()), dim=-1)
+            torch.cat(
+                (x_BLD, shoulder.detach(), c_stick.detach(), main_stick.detach()),
+                dim=-1,
+            )
         )
 
         return TensorDict(
@@ -1311,30 +1539,52 @@ class GPTv7(GPTv4Controller):
 
 
 # Shallow output heads, absolute position embeddings
-Arch.register("GPTv1-256-4-4", GPTv1, gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4))
-Arch.register("GPTv1-256-8-4", GPTv1, gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=8, n_head=4))
 Arch.register(
-    "GPTv1-256-8-4-dropout", GPTv1, gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=8, n_head=4, dropout=0.1)
+    "GPTv1-256-4-4",
+    GPTv1,
+    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4),
 )
-Arch.register("GPTv1-256-12-4", GPTv1, gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=12, n_head=4))
+Arch.register(
+    "GPTv1-256-8-4",
+    GPTv1,
+    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=8, n_head=4),
+)
+Arch.register(
+    "GPTv1-256-8-4-dropout",
+    GPTv1,
+    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=8, n_head=4, dropout=0.1),
+)
+Arch.register(
+    "GPTv1-256-12-4",
+    GPTv1,
+    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=12, n_head=4),
+)
 Arch.register(
     "GPTv1-256-12-4-dropout",
     GPTv1,
-    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=12, n_head=4, dropout=0.1),
+    gpt_config=GPTConfig(
+        block_size=1024, n_embd=256, n_layer=12, n_head=4, dropout=0.1
+    ),
 )
 
 Arch.register(
-    "GPTv1Controller-256-4-4", GPTv1Controller, gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4)
+    "GPTv1Controller-256-4-4",
+    GPTv1Controller,
+    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4),
 )
 
 # AR shallow output heads, absolute position embeddings
 Arch.register(
-    "GPTv2Controller-256-4-4", GPTv2Controller, gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4)
+    "GPTv2Controller-256-4-4",
+    GPTv2Controller,
+    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4),
 )
 Arch.register(
     "GPTv2Controller-256-12-4-dropout",
     GPTv2Controller,
-    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=12, n_head=4, dropout=0.1),
+    gpt_config=GPTConfig(
+        block_size=1024, n_embd=256, n_layer=12, n_head=4, dropout=0.1
+    ),
 )
 Arch.register(
     "GPTv2Controller-512-6-8-dropout",
@@ -1349,14 +1599,22 @@ Arch.register(
     gpt_config=GPTConfig(block_size=1024, n_embd=512, n_layer=6, n_head=8, dropout=0.2),
 )
 
-Arch.register("GPTv3-256-4-4", GPTv3, gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4))
 Arch.register(
-    "GPTv3Controller-256-4-4", GPTv3Controller, gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4)
+    "GPTv3-256-4-4",
+    GPTv3,
+    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4),
+)
+Arch.register(
+    "GPTv3Controller-256-4-4",
+    GPTv3Controller,
+    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4),
 )
 
 # AR MLP output heads, relative positional embeddings
 Arch.register(
-    "GPTv4Controller-256-4-4", GPTv4Controller, gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4)
+    "GPTv4Controller-256-4-4",
+    GPTv4Controller,
+    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4),
 )
 Arch.register(
     "GPTv4Controller-256-4-4-dropout",
@@ -1364,7 +1622,9 @@ Arch.register(
     gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=4, n_head=4, dropout=0.2),
 )
 Arch.register(
-    "GPTv4Controller-256-8-4", GPTv4Controller, gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=8, n_head=4)
+    "GPTv4Controller-256-8-4",
+    GPTv4Controller,
+    gpt_config=GPTConfig(block_size=1024, n_embd=256, n_layer=8, n_head=4),
 )
 Arch.register(
     "GPTv4Controller-256-8-4-dropout",
@@ -1390,7 +1650,9 @@ Arch.register(
 Arch.register(
     "GPTv4Controller-768-6-12-dropout",
     GPTv4Controller,
-    gpt_config=GPTConfig(block_size=1024, n_embd=768, n_layer=6, n_head=12, dropout=0.2),
+    gpt_config=GPTConfig(
+        block_size=1024, n_embd=768, n_layer=6, n_head=12, dropout=0.2
+    ),
 )
 
 # AR MLP output heads + analog shoulder, relative positional embeddings

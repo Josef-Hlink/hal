@@ -71,20 +71,22 @@ for key in x_train.keys():
                 t, feature_idx = idx.tolist()
                 feature = gamestate_fields[feature_idx % len(gamestate_fields)]
                 print(
-                    f"  Frame {t:03d}: {feature:<15} train={x_train[0,t]['gamestate'][feature_idx].item()} test={x_test[0,t]['gamestate'][feature_idx].item()}"
+                    f"  Frame {t:03d}: {feature:<15} train={x_train[0, t]['gamestate'][feature_idx].item()} test={x_test[0, t]['gamestate'][feature_idx].item()}"
                 )
         elif key == "controller":
             # For controller tensor, show which frames are different
             diff_frames = torch.any(diff_mask, dim=-1)
             for t in torch.nonzero(diff_frames, as_tuple=True)[0]:
                 print(f"  Frame {t:03d}:")
-                print(f"    train: {x_train[0,t][key].tolist()}")
-                print(f"    test:  {x_test[0,t][key].tolist()}")
+                print(f"    train: {x_train[0, t][key].tolist()}")
+                print(f"    test:  {x_test[0, t][key].tolist()}")
         else:
             # For other tensors, show the different values
             diff_indices = torch.nonzero(diff_mask, as_tuple=True)[0]
             for t in diff_indices:
-                print(f"  Frame {t:03d}: train={x_train[0,t][key].item()} test={x_test[0,t][key].item()}")
+                print(
+                    f"  Frame {t:03d}: train={x_train[0, t][key].item()} test={x_test[0, t][key].item()}"
+                )
 
 print("\nModel Prediction Differences from Ground Truth:")
 y_hat_train = model(x_train)
@@ -94,38 +96,52 @@ y_hat_test = model(x_test)
 prediction_differences = set()
 
 # Check button predictions
-buttons_diff_train = y_hat_train["buttons"][0, :105].argmax(dim=-1) != y_train["buttons"][0, :105].argmax(dim=-1)
-buttons_diff_test = y_hat_test["buttons"][0, :105].argmax(dim=-1) != y_test["buttons"][0, :105].argmax(dim=-1)
-prediction_differences.update(torch.nonzero(buttons_diff_train, as_tuple=True)[0].tolist())
-prediction_differences.update(torch.nonzero(buttons_diff_test, as_tuple=True)[0].tolist())
+buttons_diff_train = y_hat_train["buttons"][0, :105].argmax(dim=-1) != y_train[
+    "buttons"
+][0, :105].argmax(dim=-1)
+buttons_diff_test = y_hat_test["buttons"][0, :105].argmax(dim=-1) != y_test["buttons"][
+    0, :105
+].argmax(dim=-1)
+prediction_differences.update(
+    torch.nonzero(buttons_diff_train, as_tuple=True)[0].tolist()
+)
+prediction_differences.update(
+    torch.nonzero(buttons_diff_test, as_tuple=True)[0].tolist()
+)
 
 # Check main stick predictions
-stick_diff_train = y_hat_train["main_stick"][0, :105].argmax(dim=-1) != y_train["main_stick"][0, :105].argmax(dim=-1)
-stick_diff_test = y_hat_test["main_stick"][0, :105].argmax(dim=-1) != y_test["main_stick"][0, :105].argmax(dim=-1)
-prediction_differences.update(torch.nonzero(stick_diff_train, as_tuple=True)[0].tolist())
+stick_diff_train = y_hat_train["main_stick"][0, :105].argmax(dim=-1) != y_train[
+    "main_stick"
+][0, :105].argmax(dim=-1)
+stick_diff_test = y_hat_test["main_stick"][0, :105].argmax(dim=-1) != y_test[
+    "main_stick"
+][0, :105].argmax(dim=-1)
+prediction_differences.update(
+    torch.nonzero(stick_diff_train, as_tuple=True)[0].tolist()
+)
 prediction_differences.update(torch.nonzero(stick_diff_test, as_tuple=True)[0].tolist())
 
 for t in sorted(prediction_differences):
     print(f"\nFrame {t:03d}:")
     print("Buttons:")
-    print(f"  Train prediction: {y_hat_train['buttons'][0,t].argmax().item():>3d}")
-    print(f"  Train actual:     {y_train['buttons'][0,t].argmax().item():>3d}")
-    print(f"  Test prediction:  {y_hat_test['buttons'][0,t].argmax().item():>3d}")
-    print(f"  Test actual:      {y_test['buttons'][0,t].argmax().item():>3d}")
+    print(f"  Train prediction: {y_hat_train['buttons'][0, t].argmax().item():>3d}")
+    print(f"  Train actual:     {y_train['buttons'][0, t].argmax().item():>3d}")
+    print(f"  Test prediction:  {y_hat_test['buttons'][0, t].argmax().item():>3d}")
+    print(f"  Test actual:      {y_test['buttons'][0, t].argmax().item():>3d}")
 
     print("\nMain Stick:")
-    print(f"  Train prediction: {y_hat_train['main_stick'][0,t].argmax().item():>3d}")
-    print(f"  Train actual:     {y_train['main_stick'][0,t].argmax().item():>3d}")
-    print(f"  Test prediction:  {y_hat_test['main_stick'][0,t].argmax().item():>3d}")
-    print(f"  Test actual:      {y_test['main_stick'][0,t].argmax().item():>3d}")
+    print(f"  Train prediction: {y_hat_train['main_stick'][0, t].argmax().item():>3d}")
+    print(f"  Train actual:     {y_train['main_stick'][0, t].argmax().item():>3d}")
+    print(f"  Test prediction:  {y_hat_test['main_stick'][0, t].argmax().item():>3d}")
+    print(f"  Test actual:      {y_test['main_stick'][0, t].argmax().item():>3d}")
 
     # Show input differences at frames where predictions diverge
     print("\nInput state at this frame:")
     for key in x_train.keys():
         if torch.any(x_train[0, t][key] != x_test[0, t][key]):
             print(f"  {key}:")
-            print(f"    train: {x_train[0,t][key].tolist()}")
-            print(f"    test:  {x_test[0,t][key].tolist()}")
+            print(f"    train: {x_train[0, t][key].tolist()}")
+            print(f"    test:  {x_test[0, t][key].tolist()}")
 
 # %%
 torch.all(x_train[0, :103]["gamestate"] == x_test[0, :103]["gamestate"], dim=-1)
@@ -157,7 +173,9 @@ x_train[0, 100:104]["controller"]
 # %%
 # Feb 6, inputs_v1
 # artifact_dir = Path("/opt/projects/hal2/runs/2025-02-06_17-33-37/arch@GPTv1-4-4_local_batch_size@32_n_samples@262144/")
-artifact_dir = Path("/opt/projects/hal2/runs/2025-02-06_21-28-14/arch@GPTv2-4-4_local_batch_size@32_n_samples@131072/")
+artifact_dir = Path(
+    "/opt/projects/hal2/runs/2025-02-06_21-28-14/arch@GPTv2-4-4_local_batch_size@32_n_samples@131072/"
+)
 model, config = load_model_from_artifact_dir(artifact_dir)
 
 
@@ -178,8 +196,12 @@ y_hat["buttons"][0].argmax(dim=-1)
 x_test = TensorDict.load("/tmp/multishine_debugging/model_inputs_000255/")
 y_test = TensorDict.load("/tmp/multishine_debugging/model_outputs_000255/")
 # %%
-for i in torch.argwhere(x_train["ego_action"][0, :105] != x_test["ego_action"][0, :105]):
-    print(f"Frame {i[0]}: train={x_train['ego_action'][0, i[0]].item()} test={x_test['ego_action'][0, i[0]].item()}")
+for i in torch.argwhere(
+    x_train["ego_action"][0, :105] != x_test["ego_action"][0, :105]
+):
+    print(
+        f"Frame {i[0]}: train={x_train['ego_action'][0, i[0]].item()} test={x_test['ego_action'][0, i[0]].item()}"
+    )
 # %%
 y_test["buttons"][0, :105]
 # %%
@@ -241,13 +263,17 @@ y_hat_test = model(x_test)
 y_hat_test["buttons"][0].argmax(dim=-1)
 # %%
 for key in x_train.keys():
-    for i, (train_val, test_val) in enumerate(zip(x_train[key][0].tolist(), x_test[key][0].tolist())):
+    for i, (train_val, test_val) in enumerate(
+        zip(x_train[key][0].tolist(), x_test[key][0].tolist())
+    ):
         print(f"{key} frame {i:03d}: {train_val} - {test_val}")
 # %%
 
 # %%
 # Feb 5
-artifact_dir = Path("/opt/projects/hal2/runs/2025-02-04_13-53-10/arch@GPTv1-4-4_local_batch_size@32_n_samples@262144/")
+artifact_dir = Path(
+    "/opt/projects/hal2/runs/2025-02-04_13-53-10/arch@GPTv1-4-4_local_batch_size@32_n_samples@262144/"
+)
 model, config = load_model_from_artifact_dir(artifact_dir)
 
 # %%
@@ -377,7 +403,9 @@ for k, tensor in (x_train == x).items():
     print(k, tensor)
 
 # %%
-artifact_dir = Path("/opt/projects/hal2/runs/2025-02-05_13-12-15/arch@GPTv1-4-4_local_batch_size@32_n_samples@262144/")
+artifact_dir = Path(
+    "/opt/projects/hal2/runs/2025-02-05_13-12-15/arch@GPTv1-4-4_local_batch_size@32_n_samples@262144/"
+)
 model, config = load_model_from_artifact_dir(artifact_dir)
 # %%
 x_train = train_dataset[0]["inputs"][:256].unsqueeze(0)
@@ -454,7 +482,11 @@ console.connect()
 gamestate = console.step()
 while gamestate is not None:
     p1 = gamestate.players[1]
-    if p1.character == melee.Character.FOX and p1.action == melee.Action.DOWN_B_GROUND_START and p1.action_frame == 1:
+    if (
+        p1.character == melee.Character.FOX
+        and p1.action == melee.Action.DOWN_B_GROUND_START
+        and p1.action_frame == 1
+    ):
         print(f"Shine at frame {gamestate.frame}")
     gamestate = console.step()
 # %%

@@ -12,7 +12,9 @@ class InputConfigRegistry:
     def get(cls, name: str) -> InputConfig:
         if name in cls.CONFIGS:
             return cls.CONFIGS[name]
-        raise NotImplementedError(f"Config {name} not found. Valid configs: {sorted(cls.CONFIGS.keys())}.")
+        raise NotImplementedError(
+            f"Config {name} not found. Valid configs: {sorted(cls.CONFIGS.keys())}."
+        )
 
     @classmethod
     def register(cls, name: str, config: InputConfig) -> None:
@@ -26,7 +28,9 @@ class TargetConfigRegistry:
     def get(cls, name: str) -> TargetConfig:
         if name in cls.CONFIGS:
             return cls.CONFIGS[name]
-        raise NotImplementedError(f"Config {name} not found. Valid configs: {sorted(cls.CONFIGS.keys())}.")
+        raise NotImplementedError(
+            f"Config {name} not found. Valid configs: {sorted(cls.CONFIGS.keys())}."
+        )
 
     @classmethod
     def register(cls, name: str, config: TargetConfig) -> None:
@@ -40,7 +44,9 @@ class PostprocessConfigRegistry:
     def get(cls, name: str) -> PostprocessConfig:
         if name in cls.CONFIGS:
             return cls.CONFIGS[name]
-        raise NotImplementedError(f"Config {name} not found. Valid configs: {sorted(cls.CONFIGS.keys())}.")
+        raise NotImplementedError(
+            f"Config {name} not found. Valid configs: {sorted(cls.CONFIGS.keys())}."
+        )
 
     @classmethod
     def register(cls, name: str, config: PostprocessConfig) -> None:

@@ -168,7 +168,9 @@ class MatchupMenuHelper:
         If character_2 or stage_selected is None, the function will wait for human user.
         """
         if gamestate.menu_state == enums.Menu.MAIN_MENU:
-            melee.menuhelper.MenuHelper.choose_versus_mode(gamestate=gamestate, controller=self.controller_1)
+            melee.menuhelper.MenuHelper.choose_versus_mode(
+                gamestate=gamestate, controller=self.controller_1
+            )
         # If we're at the character select screen, choose our character
         elif gamestate.menu_state == enums.Menu.CHARACTER_SELECT:
             melee.menuhelper.MenuHelper.choose_character(
@@ -196,7 +198,10 @@ class MatchupMenuHelper:
             if self.stage is None:
                 return
             melee.menuhelper.MenuHelper.choose_stage(
-                stage=self.stage, gamestate=gamestate, controller=self.controller_1, character=self.character_1
+                stage=self.stage,
+                gamestate=gamestate,
+                controller=self.controller_1,
+                character=self.character_1,
             )
         # If we're at the postgame scores screen, spam START
         elif gamestate.menu_state == enums.Menu.POSTGAME_SCORES:
@@ -231,7 +236,9 @@ def console_manager(console: melee.Console, console_logger: melee.Logger | None 
         logger.info("Shutting down cleanly...")
 
 
-def send_controller_inputs(controller: melee.Controller, inputs: Dict[str, Any]) -> None:
+def send_controller_inputs(
+    controller: melee.Controller, inputs: Dict[str, Any]
+) -> None:
     """
     Press buttons and tilt analog sticks given a dictionary of array-like values (length T for T future time steps).
 
@@ -273,7 +280,9 @@ class EmulatorManager:
     player: Player
     replay_dir: Path | None = None
     opponent_cpu_level: int = 9
-    matchup: Matchup = Matchup(stage="BATTLEFIELD", ego_character="FOX", opponent_character="FOX")
+    matchup: Matchup = Matchup(
+        stage="BATTLEFIELD", ego_character="FOX", opponent_character="FOX"
+    )
     episode_stats: EpisodeStats = EpisodeStats()
     max_steps: int = 99999
     latency_warning_threshold: float = 14.0
@@ -291,10 +300,14 @@ class EmulatorManager:
         )
         self.console = melee.Console(**console_kwargs)
         self.ego_controller = melee.Controller(
-            console=self.console, port=_get_console_port(self.player), type=melee.ControllerType.STANDARD
+            console=self.console,
+            port=_get_console_port(self.player),
+            type=melee.ControllerType.STANDARD,
         )
         self.opponent_controller = melee.Controller(
-            console=self.console, port=_get_console_port(get_opponent(self.player)), type=melee.ControllerType.STANDARD
+            console=self.console,
+            port=_get_console_port(get_opponent(self.player)),
+            type=melee.ControllerType.STANDARD,
         )
         self.menu_helper = MatchupMenuHelper(
             controller_1=self.ego_controller,
@@ -305,7 +318,9 @@ class EmulatorManager:
             opponent_cpu_level=self.opponent_cpu_level,
         )
 
-    def run_game(self) -> Generator[melee.GameState, Tuple[Dict[str, Any], Dict[str, Any] | None], None]:
+    def run_game(
+        self,
+    ) -> Generator[melee.GameState, Tuple[Dict[str, Any], Dict[str, Any] | None], None]:
         """Generator that yields gamestates and receives controller inputs.
 
         Yields:
@@ -315,7 +330,9 @@ class EmulatorManager:
             TensorDict: Controller inputs to be applied to the game
         """
         # Run the console
-        self.console.run(iso_path=ISO_PATH)  # Do not pass dolphin_user_path to avoid overwriting init kwargs
+        self.console.run(
+            iso_path=ISO_PATH
+        )  # Do not pass dolphin_user_path to avoid overwriting init kwargs
         # Connect to the console
         logger.debug("Connecting to console...")
         if not self.console.connect():
@@ -343,8 +360,9 @@ class EmulatorManager:
 
         # Wrap console manager inside a thread for timeouts
         # Important that console manager context goes second to gracefully handle keyboard interrupts, timeouts, and all other exceptions
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor, console_manager(
-            console=self.console, console_logger=self.console_logger
+        with (
+            concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor,
+            console_manager(console=self.console, console_logger=self.console_logger),
         ):
             logger.debug(
                 f"Starting episode on {self.matchup.stage}: {self.matchup.ego_character} vs. {self.matchup.opponent_character}"
@@ -365,9 +383,16 @@ class EmulatorManager:
                     continue
 
                 if self.console.processingtime * 1000 > self.latency_warning_threshold:
-                    logger.debug("Last frame took " + str(self.console.processingtime * 1000) + "ms to process.")
+                    logger.debug(
+                        "Last frame took "
+                        + str(self.console.processingtime * 1000)
+                        + "ms to process."
+                    )
 
-                if gamestate.menu_state not in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
+                if gamestate.menu_state not in [
+                    melee.Menu.IN_GAME,
+                    melee.Menu.SUDDEN_DEATH,
+                ]:
                     if match_started:
                         logger.debug("Match ended")
                         break
@@ -382,16 +407,22 @@ class EmulatorManager:
                     if controller_inputs is None:
                         logger.error("Controller inputs are None")
                     else:
-                        ego_controller_inputs, opponent_controller_inputs = controller_inputs
+                        ego_controller_inputs, opponent_controller_inputs = (
+                            controller_inputs
+                        )
                         send_start = time.perf_counter()
-                        send_controller_inputs(self.ego_controller, ego_controller_inputs)
+                        send_controller_inputs(
+                            self.ego_controller, ego_controller_inputs
+                        )
                         if opponent_controller_inputs is not None:
-                            send_controller_inputs(self.opponent_controller, opponent_controller_inputs)
+                            send_controller_inputs(
+                                self.opponent_controller, opponent_controller_inputs
+                            )
                         send_time = time.perf_counter() - send_start
 
                         if i % 60 == 0:
                             logger.debug(
-                                f"Console.step() time: {step_time*1000:.2f}ms, controller send time: {send_time*1000:.2f}ms"
+                                f"Console.step() time: {step_time * 1000:.2f}ms, controller send time: {send_time * 1000:.2f}ms"
                             )
 
                     self.episode_stats.update(gamestate)

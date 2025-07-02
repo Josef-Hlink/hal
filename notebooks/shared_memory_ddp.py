@@ -36,7 +36,10 @@ def get_rank() -> int:
 
 def train() -> None:
     train_config = TrainConfig(
-        n_gpus=2, debug=True, arch="GPTv1-4-4", data=DataConfig(data_dir="/opt/projects/hal2/data/dev")
+        n_gpus=2,
+        debug=True,
+        arch="GPTv1-4-4",
+        data=DataConfig(data_dir="/opt/projects/hal2/data/dev"),
     )
     split = "train"
     monitor = MemoryMonitor()
@@ -64,7 +67,11 @@ def train() -> None:
 
     time.sleep(1)
     ctx = torch.multiprocessing.start_processes(
-        _worker, args=(world_size, dataset), nprocs=world_size, join=False, start_method="forkserver"
+        _worker,
+        args=(world_size, dataset),
+        nprocs=world_size,
+        join=False,
+        start_method="forkserver",
     )
 
     pids = ctx.pids()

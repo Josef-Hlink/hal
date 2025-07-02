@@ -159,4 +159,6 @@ NP_TYPE_BY_COLUMN: dict[str, DTypeLike] = {
 }
 
 # Create a mapping of column names to human-readable dtype strings.
-MDS_DTYPE_STR_BY_COLUMN = {name: f"ndarray:{np.dtype(dtype).name}" for name, dtype in NP_TYPE_BY_COLUMN.items()}
+MDS_DTYPE_STR_BY_COLUMN = {
+    name: f"ndarray:{np.dtype(dtype).name}" for name, dtype in NP_TYPE_BY_COLUMN.items()
+}

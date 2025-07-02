@@ -123,16 +123,24 @@ def button_fine_main_coarser_cstick_medium_analog_shoulder() -> PostprocessConfi
 
 PostprocessConfigRegistry.register("baseline_coarse", baseline_coarse())
 PostprocessConfigRegistry.register("baseline_fine", baseline_fine())
-PostprocessConfigRegistry.register("baseline_coarse_shoulder", baseline_coarse_shoulder())
-PostprocessConfigRegistry.register("fine_main_analog_shoulder", fine_main_analog_shoulder())
-PostprocessConfigRegistry.register("baseline_finer", baseline_finer())
-PostprocessConfigRegistry.register("fine_main_coarser_cstick", fine_main_coarser_cstick())
-PostprocessConfigRegistry.register("fine_orig_buttons", fine_orig_buttons())
 PostprocessConfigRegistry.register(
-    "fine_orig_buttons_one_hot_shoulder_one_hot", fine_orig_buttons_one_hot_shoulder_one_hot()
+    "baseline_coarse_shoulder", baseline_coarse_shoulder()
 )
 PostprocessConfigRegistry.register(
-    "separate_digital_shoulders_analog_shoulder_one_hot", separate_digital_shoulders_analog_shoulder_one_hot()
+    "fine_main_analog_shoulder", fine_main_analog_shoulder()
+)
+PostprocessConfigRegistry.register("baseline_finer", baseline_finer())
+PostprocessConfigRegistry.register(
+    "fine_main_coarser_cstick", fine_main_coarser_cstick()
+)
+PostprocessConfigRegistry.register("fine_orig_buttons", fine_orig_buttons())
+PostprocessConfigRegistry.register(
+    "fine_orig_buttons_one_hot_shoulder_one_hot",
+    fine_orig_buttons_one_hot_shoulder_one_hot(),
+)
+PostprocessConfigRegistry.register(
+    "separate_digital_shoulders_analog_shoulder_one_hot",
+    separate_digital_shoulders_analog_shoulder_one_hot(),
 )
 PostprocessConfigRegistry.register(
     "button_fine_main_coarser_cstick_medium_analog_shoulder",

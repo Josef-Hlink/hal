@@ -28,7 +28,14 @@ class HALStreamingDataset(StreamingDataset):
         debug: bool = False,
         **kwargs,
     ) -> None:
-        super().__init__(streams=streams, local=local, remote=remote, batch_size=batch_size, shuffle=shuffle, **kwargs)
+        super().__init__(
+            streams=streams,
+            local=local,
+            remote=remote,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            **kwargs,
+        )
         self.preprocessor = Preprocessor(data_config=data_config)
         self.seq_len = self.preprocessor.seq_len
         self.data_config = data_config
@@ -42,7 +49,9 @@ class HALStreamingDataset(StreamingDataset):
         episode_features_by_name = add_reward_to_episode(episode_features_by_name)
         episode_td = convert_ndarray_to_tensordict(episode_features_by_name)
 
-        player_perspective = "p1" if self.debug else cast(Player, random.choice(VALID_PLAYERS))
+        player_perspective = (
+            "p1" if self.debug else cast(Player, random.choice(VALID_PLAYERS))
+        )
         episode_td = self.preprocessor.compute_returns(episode_td, player_perspective)
         sample_T = self.preprocessor.sample_from_episode(episode_td, debug=self.debug)
 

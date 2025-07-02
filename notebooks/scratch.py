@@ -45,7 +45,9 @@ for k, v in mock_model_inputs_.items():
 # replay_path = Path(
 #     "/opt/slippi/data/ranked-anonymized-2-151807/ranked-anonymized/master-platinum-f9770bb9a470e511f7f7c541.slp"
 # )
-replay_path = Path("/opt/slippi/data/ranked/ranked-anonymized-6-171694/master-master-b07692aa6f672cfaaf0b05bd.slp")
+replay_path = Path(
+    "/opt/slippi/data/ranked/ranked-anonymized-6-171694/master-master-b07692aa6f672cfaaf0b05bd.slp"
+)
 np_dict = process_replay(replay_path)
 
 # %%
@@ -89,7 +91,9 @@ import random
 # %%
 def has_iceclimbers(replay_path: Path):
     try:
-        console = melee.Console(path=str(replay_path), is_dolphin=False, allow_old_version=True)
+        console = melee.Console(
+            path=str(replay_path), is_dolphin=False, allow_old_version=True
+        )
         console.connect()
     except Exception as e:
         return None
@@ -102,7 +106,10 @@ def has_iceclimbers(replay_path: Path):
         players = curr_gamestate.players
         for port, player in players.items():
             # print(port, player.character)
-            if player.character == melee.Character.POPO or player.character == melee.Character.NANA:
+            if (
+                player.character == melee.Character.POPO
+                or player.character == melee.Character.NANA
+            ):
                 return True
         return False
     finally:
@@ -131,7 +138,9 @@ print(len(iceclimbers_replays))
 # %%
 iceclimbers_replays[:10]
 # %%
-console = melee.Console(path=str(iceclimbers_replays[0]), is_dolphin=False, allow_old_version=True)
+console = melee.Console(
+    path=str(iceclimbers_replays[0]), is_dolphin=False, allow_old_version=True
+)
 console.connect()
 gamestate = console.step()
 p1_states = []
@@ -199,5 +208,7 @@ for feature in ranked_stats.keys():
         ranked_feature = ranked_stats[feature]
         for stat in mang0_feature.keys():
             if stat in ranked_feature:
-                print(f"{feature=}, {stat=}, mang0={mang0_feature[stat]}, ranked={ranked_feature[stat]}")
+                print(
+                    f"{feature=}, {stat=}, mang0={mang0_feature[stat]}, ranked={ranked_feature[stat]}"
+                )
 # %%

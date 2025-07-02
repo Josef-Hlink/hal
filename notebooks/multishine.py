@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """This example program demonstrates how to use the Melee API to run a console,
 setup controllers, and send button presses over to a console."""
+
 import argparse
 import concurrent.futures
 import random
@@ -39,13 +40,31 @@ def check_port(value):
 def main():
     parser = argparse.ArgumentParser(description="Example of libmelee in action")
     parser.add_argument(
-        "--port", "-p", type=check_port, help="The controller port (1-4) your AI will play on", default=2
+        "--port",
+        "-p",
+        type=check_port,
+        help="The controller port (1-4) your AI will play on",
+        default=2,
     )
     parser.add_argument(
-        "--opponent", "-o", type=check_port, help="The controller port (1-4) the opponent will play on", default=1
+        "--opponent",
+        "-o",
+        type=check_port,
+        help="The controller port (1-4) the opponent will play on",
+        default=1,
     )
-    parser.add_argument("--debug", "-d", action="store_true", help="Debug mode. Creates a CSV of all game states")
-    parser.add_argument("--connect_code", "-t", default="", help="Direct connect code to connect to in Slippi Online")
+    parser.add_argument(
+        "--debug",
+        "-d",
+        action="store_true",
+        help="Debug mode. Creates a CSV of all game states",
+    )
+    parser.add_argument(
+        "--connect_code",
+        "-t",
+        default="",
+        help="Direct connect code to connect to in Slippi Online",
+    )
 
     args = parser.parse_args()
 
@@ -60,7 +79,9 @@ def main():
     #   The Console represents the virtual or hardware system Melee is playing on.
     #   Through this object, we can get "GameState" objects per-frame so that your
     #       bot can actually "see" what's happening in the game
-    console_kwargs = get_gui_console_kwargs(emulator_path=emulator_path, replay_dir=Path(MAC_REPLAY_DIR))
+    console_kwargs = get_gui_console_kwargs(
+        emulator_path=emulator_path, replay_dir=Path(MAC_REPLAY_DIR)
+    )
     logger.info(f"Console kwargs: {console_kwargs}")
     console = melee.Console(**console_kwargs)
     logger.debug(f"Saving replay to {console_kwargs['replay_dir']}")
@@ -69,9 +90,13 @@ def main():
     #   The controller is the second primary object your bot will interact with
     #   Your controller is your way of sending button presses to the game, whether
     #   virtual or physical.
-    controller = melee.Controller(console=console, port=args.port, type=melee.ControllerType.STANDARD)
+    controller = melee.Controller(
+        console=console, port=args.port, type=melee.ControllerType.STANDARD
+    )
 
-    controller_opponent = melee.Controller(console=console, port=args.opponent, type=melee.ControllerType.STANDARD)
+    controller_opponent = melee.Controller(
+        console=console, port=args.opponent, type=melee.ControllerType.STANDARD
+    )
 
     # This isn't necessary, but makes it so that Dolphin will get killed when you ^C
     def signal_handler(sig, frame) -> None:
@@ -125,7 +150,10 @@ def main():
     # Main loop
     i = 0
     match_started = False
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor, console_manager(console, log):
+    with (
+        concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor,
+        console_manager(console, log),
+    ):
         while True:
             # Wrap `console.step()` in a thread with timeout
             future = executor.submit(console.step)
@@ -143,7 +171,11 @@ def main():
             # The console object keeps track of how long your bot is taking to process frames
             #   And can warn you if it's taking too long
             if console.processingtime * 1000 > 12:
-                logger.debug("WARNING: Last frame took " + str(console.processingtime * 1000) + "ms to process.")
+                logger.debug(
+                    "WARNING: Last frame took "
+                    + str(console.processingtime * 1000)
+                    + "ms to process."
+                )
 
             # What menu are we in?
             if gamestate.menu_state in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
@@ -155,12 +187,17 @@ def main():
                 #   port we actually are.
                 discovered_port = args.port
                 if args.connect_code != "":
-                    discovered_port = melee.gamestate.port_detector(gamestate, melee.Character.FOX, costume)
+                    discovered_port = melee.gamestate.port_detector(
+                        gamestate, melee.Character.FOX, costume
+                    )
                 if discovered_port > 0:
                     # NOTE: This is where your AI does all of its stuff!
                     # This line will get hit once per frame, so here is where you read
                     #   in the gamestate and decide what buttons to push on the controller
-                    melee.techskill.multishine(ai_state=gamestate.players[discovered_port], controller=controller)
+                    melee.techskill.multishine(
+                        ai_state=gamestate.players[discovered_port],
+                        controller=controller,
+                    )
                 else:
                     # If the discovered port was unsure, reroll our costume for next time
                     costume = random.randint(0, 4)

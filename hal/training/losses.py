@@ -13,20 +13,25 @@ class Gaussian2DHistogramLoss(nn.Module):
     """
 
     # TODO refactor to use 2d grid
-    def __init__(self, min_value: float, max_value: float, num_bins: int, sigma: float) -> None:
+    def __init__(
+        self, min_value: float, max_value: float, num_bins: int, sigma: float
+    ) -> None:
         super().__init__()
         self.min_value = min_value
         self.max_value = max_value
         self.num_bins = num_bins
         self.sigma = sigma
-        self.support = torch.linspace(min_value, max_value, num_bins + 1, dtype=torch.float32)
+        self.support = torch.linspace(
+            min_value, max_value, num_bins + 1, dtype=torch.float32
+        )
 
     def forward(self, logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         return F.cross_entropy(logits, self.transform_to_probs(target))
 
     def transform_to_probs(self, target: torch.Tensor) -> torch.Tensor:
         cdf_evals = torch.special.erf(
-            (self.support - target.unsqueeze(-1)) / (torch.sqrt(torch.tensor(2.0)) * self.sigma)
+            (self.support - target.unsqueeze(-1))
+            / (torch.sqrt(torch.tensor(2.0)) * self.sigma)
         )
         z = cdf_evals[..., -1] - cdf_evals[..., 0]
         bin_probs = cdf_evals[..., 1:] - cdf_evals[..., :-1]
@@ -84,7 +89,9 @@ class Gaussian2DPointsLoss(nn.Module):
         cluster_centers_expanded = self.cluster_centers.unsqueeze(0)  # (1, N, 2)
         # (B, 2) -> (B, 1, 2) for broadcasting
         target_expanded = target.unsqueeze(1)  # (B, 1, 2)
-        dists_sq_BN = torch.sum((cluster_centers_expanded - target_expanded) ** 2, dim=-1)
+        dists_sq_BN = torch.sum(
+            (cluster_centers_expanded - target_expanded) ** 2, dim=-1
+        )
 
         weights_BN = torch.exp(-dists_sq_BN / (2.0 * self.sigma**2))
 

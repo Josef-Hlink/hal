@@ -389,6 +389,8 @@ def test_convert_target_to_one_hot_2d(in_buttons_LD, out_buttons_LD) -> None:
         ),
     ],
 )
-def test_convert_target_to_one_hot_early_release_2d(in_buttons_LD, out_buttons_LD) -> None:
+def test_convert_target_to_one_hot_early_release_2d(
+    in_buttons_LD, out_buttons_LD
+) -> None:
     result = convert_multi_hot_to_one_hot_early_release(in_buttons_LD)
     assert_array_equal(result, out_buttons_LD, err_msg=f"{result}\n{out_buttons_LD}")

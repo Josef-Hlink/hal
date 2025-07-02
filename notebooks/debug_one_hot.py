@@ -13,7 +13,15 @@ np.set_printoptions(threshold=np.inf)
 
 
 INPUT_FEATURES_TO_EMBED = ("stage", "character", "action")
-INPUT_FEATURES_TO_NORMALIZE = ("percent", "stock", "facing", "action_frame", "invulnerable", "jumps_left", "on_ground")
+INPUT_FEATURES_TO_NORMALIZE = (
+    "percent",
+    "stock",
+    "facing",
+    "action_frame",
+    "invulnerable",
+    "jumps_left",
+    "on_ground",
+)
 INPUT_FEATURES_TO_INVERT_AND_NORMALIZE = ("shield_strength",)
 INPUT_FEATURES_TO_STANDARDIZE = (
     "position_x",
@@ -27,12 +35,20 @@ INPUT_FEATURES_TO_STANDARDIZE = (
     "speed_ground_x_self",
 )
 
-TARGET_FEATURES_TO_ONE_HOT_ENCODE = ("button_a", "button_b", "button_x", "button_z", "button_l")
+TARGET_FEATURES_TO_ONE_HOT_ENCODE = (
+    "button_a",
+    "button_b",
+    "button_x",
+    "button_z",
+    "button_l",
+)
 
 
 def pyarrow_table_to_np_dict(table: pa.Table) -> Dict[str, np.ndarray]:
     """Convert pyarrow table to dictionary of numpy arrays."""
-    return {name: col.to_numpy() for name, col in zip(table.column_names, table.columns)}
+    return {
+        name: col.to_numpy() for name, col in zip(table.column_names, table.columns)
+    }
 
 
 def normalize(array: np.ndarray, stats: FeatureStats) -> np.ndarray:
@@ -108,7 +124,9 @@ def convert_target_to_one_hot(array: np.ndarray) -> np.ndarray:
     # Handle cases with single button press
     single_press_mask = press_counts == 1
     single_press_times = unique_times[single_press_mask]
-    single_press_buttons = button_presses[np.isin(button_presses[:, 0], single_press_times), 1]
+    single_press_buttons = button_presses[
+        np.isin(button_presses[:, 0], single_press_times), 1
+    ]
     one_hot[single_press_times, single_press_buttons] = 1
 
     # Handle cases with multiple button presses
@@ -117,7 +135,9 @@ def convert_target_to_one_hot(array: np.ndarray) -> np.ndarray:
 
     if len(multi_press_times) > 0:
         # Find the first new button press for each multi-press time step
-        multi_press_buttons = [button_presses[button_presses[:, 0] == t, 1] for t in multi_press_times]
+        multi_press_buttons = [
+            button_presses[button_presses[:, 0] == t, 1] for t in multi_press_times
+        ]
         held_buttons = np.zeros(D, dtype=bool)
         for t, buttons in zip(multi_press_times, multi_press_buttons):
             new_buttons = buttons[~held_buttons[buttons]]
@@ -160,14 +180,18 @@ def convert_target_to_one_hot_3d(array: np.ndarray) -> np.ndarray:
     # Handle cases with single button press
     single_press_mask = press_counts == 1
     single_press_batch_times = unique_batch_times[single_press_mask]
-    single_press_buttons = button_presses[np.isin(batch_time_id, single_press_batch_times), 2]
+    single_press_buttons = button_presses[
+        np.isin(batch_time_id, single_press_batch_times), 2
+    ]
     one_hot.reshape(N * T, -1)[single_press_batch_times, single_press_buttons] = 1
 
     # Handle cases with multiple button presses
     multi_press_mask = press_counts > 1
     if np.any(multi_press_mask):
         multi_press_batch_times = unique_batch_times[multi_press_mask]
-        multi_press_indices = np.where(np.isin(batch_time_id, multi_press_batch_times))[0]
+        multi_press_indices = np.where(np.isin(batch_time_id, multi_press_batch_times))[
+            0
+        ]
         multi_press_buttons = button_presses[multi_press_indices, 2]
 
         # Reshape to (num_multi_presses, max_buttons_per_press)
@@ -176,7 +200,10 @@ def convert_target_to_one_hot_3d(array: np.ndarray) -> np.ndarray:
         np.put(
             button_matrix,
             np.arange(len(multi_press_buttons))
-            + np.repeat(np.arange(len(multi_press_batch_times)), press_counts[multi_press_mask]) * max_buttons,
+            + np.repeat(
+                np.arange(len(multi_press_batch_times)), press_counts[multi_press_mask]
+            )
+            * max_buttons,
             multi_press_buttons,
         )
 
@@ -187,9 +214,14 @@ def convert_target_to_one_hot_3d(array: np.ndarray) -> np.ndarray:
                 np.arange(len(multi_press_batch_times)), button_matrix[:, i]
             ]
             if np.any(valid_buttons):
-                one_hot.reshape(N * T, -1)[multi_press_batch_times[valid_buttons], button_matrix[valid_buttons, i]] = 1
+                one_hot.reshape(N * T, -1)[
+                    multi_press_batch_times[valid_buttons],
+                    button_matrix[valid_buttons, i],
+                ] = 1
                 break
-            cumulative_mask[np.arange(len(multi_press_batch_times)), button_matrix[:, i]] = True
+            cumulative_mask[
+                np.arange(len(multi_press_batch_times)), button_matrix[:, i]
+            ] = True
 
     return one_hot
 
@@ -223,7 +255,9 @@ feature_processors = {
 }
 
 
-def preprocess_features_v0(sample: Dict[str, np.ndarray], stats: Dict[str, FeatureStats]) -> Dict[str, np.ndarray]:
+def preprocess_features_v0(
+    sample: Dict[str, np.ndarray], stats: Dict[str, FeatureStats]
+) -> Dict[str, np.ndarray]:
     """Preprocess features."""
     preprocessed = {}
 
@@ -236,7 +270,9 @@ def preprocess_features_v0(sample: Dict[str, np.ndarray], stats: Dict[str, Featu
         shoulder = union(sample[f"{player}_button_l"], sample[f"{player}_button_r"])
         # no_button = np.zeros_like(sample[f"{player}_button_a"])
 
-        stacked_buttons = np.stack((button_a, button_b, button_z, jump, shoulder), axis=1)
+        stacked_buttons = np.stack(
+            (button_a, button_b, button_z, jump, shoulder), axis=1
+        )
         preprocessed[f"{player}_buttons"] = one_hot(stacked_buttons)
 
     # for feature_list, preprocessing_func in feature_processors.items():

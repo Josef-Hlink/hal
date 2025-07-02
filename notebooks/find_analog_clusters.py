@@ -7,7 +7,9 @@ from streaming import StreamingDataset
 
 
 # %%
-def assign_clusters(data: np.ndarray, centroids: np.ndarray, chunk_size: int = 100_000) -> np.ndarray:
+def assign_clusters(
+    data: np.ndarray, centroids: np.ndarray, chunk_size: int = 100_000
+) -> np.ndarray:
     """
     Assign each data point to the nearest centroid using squared distances.
     Processes data in chunks to avoid large memory usage.
@@ -33,7 +35,11 @@ def assign_clusters(data: np.ndarray, centroids: np.ndarray, chunk_size: int = 1
         # Compute squared distances:
         #   d(x, c)^2 = ||x||^2 + ||c||^2 - 2 * (x dot c)
         # (chunk**2).sum(axis=1, keepdims=True) has shape (chunk_size, 1)
-        distances = np.sum(chunk**2, axis=1, keepdims=True) + centroids_sq - 2 * chunk.dot(centroids.T)
+        distances = (
+            np.sum(chunk**2, axis=1, keepdims=True)
+            + centroids_sq
+            - 2 * chunk.dot(centroids.T)
+        )
 
         # Assign the closest centroid (no need to take sqrt)
         labels[start:end] = np.argmin(distances, axis=1)
@@ -76,7 +82,9 @@ def update_centroids(data: np.ndarray, labels: np.ndarray, k: int) -> np.ndarray
     return new_centroids
 
 
-def k_means_plus_plus_init(data: np.ndarray, k: int, chunk_size: int = 100_000) -> np.ndarray:
+def k_means_plus_plus_init(
+    data: np.ndarray, k: int, chunk_size: int = 100_000
+) -> np.ndarray:
     """
     Initialize cluster centers using k-means++ algorithm.
 
@@ -106,7 +114,9 @@ def k_means_plus_plus_init(data: np.ndarray, k: int, chunk_size: int = 100_000) 
             chunk = data[start:end]
 
             # Compute distances to closest centroid for all points in chunk
-            chunk_distances = np.sum((chunk[:, np.newaxis] - centroids[:c]) ** 2, axis=2)
+            chunk_distances = np.sum(
+                (chunk[:, np.newaxis] - centroids[:c]) ** 2, axis=2
+            )
             min_distances = np.min(chunk_distances, axis=1)
 
             # Update distances if smaller
@@ -121,7 +131,11 @@ def k_means_plus_plus_init(data: np.ndarray, k: int, chunk_size: int = 100_000) 
 
 
 def k_means(
-    data: np.ndarray, k: int, max_iterations: int = 100, chunk_size: int = 100_000, init: str = "k-means++"
+    data: np.ndarray,
+    k: int,
+    max_iterations: int = 100,
+    chunk_size: int = 100_000,
+    init: str = "k-means++",
 ) -> np.ndarray:
     """
     An optimized k-means implementation.
@@ -212,7 +226,9 @@ full_c_stick = np.stack((c_stick_x, c_stick_y), axis=-1)
 len(full_main_stick)
 # %%
 # randomly sample 1000000 points
-main_stick = full_main_stick[np.random.choice(len(full_main_stick), size=200000, replace=False)]
+main_stick = full_main_stick[
+    np.random.choice(len(full_main_stick), size=200000, replace=False)
+]
 # %%
 plt.scatter(main_stick[:, 0], main_stick[:, 1], color="blue")
 # %%
@@ -225,7 +241,13 @@ main_stick_1k = main_stick[np.random.choice(len(main_stick), size=1000, replace=
 # normalize to -1, 1
 main_stick_normalized = (main_stick - 0.5) * 2
 plt.figure(figsize=(10, 10))
-h = plt.hist2d(main_stick_normalized[:, 0], main_stick_normalized[:, 1], bins=200, cmap="YlOrRd", norm=LogNorm())
+h = plt.hist2d(
+    main_stick_normalized[:, 0],
+    main_stick_normalized[:, 1],
+    bins=200,
+    cmap="YlOrRd",
+    norm=LogNorm(),
+)
 plt.colorbar(h[3])
 plt.title("Main Stick Position Heatmap (Log Scale)")
 plt.xlabel("X Position")
@@ -236,7 +258,13 @@ plt.show()
 # %%
 c_stick_normalized = (c_stick - 0.5) * 2
 plt.figure(figsize=(10, 10))
-h = plt.hist2d(c_stick_normalized[:, 0], c_stick_normalized[:, 1], bins=50, cmap="YlOrRd", norm=LogNorm())
+h = plt.hist2d(
+    c_stick_normalized[:, 0],
+    c_stick_normalized[:, 1],
+    bins=50,
+    cmap="YlOrRd",
+    norm=LogNorm(),
+)
 plt.colorbar(h[3])
 plt.title("C Stick Position Heatmap (Log Scale)")
 plt.xlabel("X Position")
@@ -247,7 +275,9 @@ plt.show()
 # %%
 # smooth heatmap of main stick using KDE
 # WARNING: SLOW
-sns.kdeplot(x=main_stick_1k[:, 0], y=main_stick_1k[:, 1], cmap="YlOrRd", fill=True, cbar=True)
+sns.kdeplot(
+    x=main_stick_1k[:, 0], y=main_stick_1k[:, 1], cmap="YlOrRd", fill=True, cbar=True
+)
 plt.title("Main Stick Heatmap")
 plt.show()
 
@@ -268,7 +298,9 @@ np.set_printoptions(suppress=True)
 actual_coords = (main_stick_centroids - 0.5) * 2
 plt.figure(figsize=(10, 10))
 plt.scatter(main_stick_centroids[:, 0], main_stick_centroids[:, 1], color="red")
-for i, (orig_point, actual_point) in enumerate(zip(main_stick_centroids, actual_coords)):
+for i, (orig_point, actual_point) in enumerate(
+    zip(main_stick_centroids, actual_coords)
+):
     plt.annotate(
         f"({actual_point[0]:.2f}, {actual_point[1]:.2f})",
         xy=(orig_point[0], orig_point[1]),
@@ -397,7 +429,9 @@ for i in range(N):
         used[j_min] = True
     else:
         # If no partner is found, reflect the point across y=0.5.
-        new_pts_4[i] = (pts_temp[i] + np.array([pts_temp[i, 0], 1 - pts_temp[i, 1]])) / 2.0
+        new_pts_4[i] = (
+            pts_temp[i] + np.array([pts_temp[i, 0], 1 - pts_temp[i, 1]])
+        ) / 2.0
         used[i] = True
 
 # ======================================================
@@ -427,7 +461,9 @@ plt.legend()
 
 # 4–way symmetric points
 plt.subplot(1, 3, 3)
-plt.scatter(new_pts_4[:, 0], new_pts_4[:, 1], c="magenta", s=40, label="4–way Symmetric")
+plt.scatter(
+    new_pts_4[:, 0], new_pts_4[:, 1], c="magenta", s=40, label="4–way Symmetric"
+)
 plt.scatter(center[0], center[1], c="red", marker="x", s=100, label="Center")
 plt.title("Forced 4–way Symmetry")
 plt.xlabel("x")
@@ -471,7 +507,13 @@ def remove_near_duplicates(points, rtol=1e-3):
 deduped_new_pts_y = remove_near_duplicates(new_pts_y, rtol=1e-2)
 print(len(deduped_new_pts_y))
 
-plt.scatter(deduped_new_pts_y[:, 0], deduped_new_pts_y[:, 1], c="green", s=40, label="y–axis Symmetric")
+plt.scatter(
+    deduped_new_pts_y[:, 0],
+    deduped_new_pts_y[:, 1],
+    c="green",
+    s=40,
+    label="y–axis Symmetric",
+)
 plt.scatter(center[0], center[1], c="red", marker="x", s=100, label="Center")
 plt.title("Forced Symmetry across y–axis")
 plt.xlabel("x")
@@ -483,7 +525,9 @@ plt.show()
 deduped_new_pts_y
 # %%
 # Sort points by x and y coordinates while keeping rows together
-sorted_points = deduped_new_pts_y[np.lexsort((deduped_new_pts_y[:, 1], deduped_new_pts_y[:, 0]))]
+sorted_points = deduped_new_pts_y[
+    np.lexsort((deduped_new_pts_y[:, 1], deduped_new_pts_y[:, 0]))
+]
 sorted_points
 
 # %%
@@ -528,7 +572,9 @@ importlib.reload(hal.constants)
 from hal.constants import STICK_XY_CLUSTER_CENTERS_V1
 
 # plt.scatter(STICK_XY_CLUSTER_CENTERS_V0[:, 0], STICK_XY_CLUSTER_CENTERS_V0[:, 1], color="red")
-plt.scatter(STICK_XY_CLUSTER_CENTERS_V1[:, 0], STICK_XY_CLUSTER_CENTERS_V1[:, 1], color="blue")
+plt.scatter(
+    STICK_XY_CLUSTER_CENTERS_V1[:, 0], STICK_XY_CLUSTER_CENTERS_V1[:, 1], color="blue"
+)
 plt.axis("equal")
 plt.show()
 # %%
@@ -542,7 +588,9 @@ importlib.reload(hal.constants)
 from hal.constants import STICK_XY_CLUSTER_CENTERS_V0
 
 # plt.scatter(STICK_XY_CLUSTER_CENTERS_V0[:, 0], STICK_XY_CLUSTER_CENTERS_V0[:, 1], color="red")
-plt.scatter(STICK_XY_CLUSTER_CENTERS_V0[:, 0], STICK_XY_CLUSTER_CENTERS_V0[:, 1], color="blue")
+plt.scatter(
+    STICK_XY_CLUSTER_CENTERS_V0[:, 0], STICK_XY_CLUSTER_CENTERS_V0[:, 1], color="blue"
+)
 plt.axis("equal")
 plt.show()
 # %%
@@ -600,20 +648,28 @@ STICK_XY_CLUSTER_CENTERS_V2 = np.array(
         [-0.3, 0.95],
     ]
 )
-plt.scatter(STICK_XY_CLUSTER_CENTERS_V2[:, 0], STICK_XY_CLUSTER_CENTERS_V2[:, 1], color="blue")
+plt.scatter(
+    STICK_XY_CLUSTER_CENTERS_V2[:, 0], STICK_XY_CLUSTER_CENTERS_V2[:, 1], color="blue"
+)
 plt.axis("equal")
 plt.show()
 # %%
 from hal.constants import STICK_XY_CLUSTER_CENTERS_V2
 
-plt.scatter(STICK_XY_CLUSTER_CENTERS_V2[:, 0], STICK_XY_CLUSTER_CENTERS_V2[:, 1], color="blue")
+plt.scatter(
+    STICK_XY_CLUSTER_CENTERS_V2[:, 0], STICK_XY_CLUSTER_CENTERS_V2[:, 1], color="blue"
+)
 plt.axis("equal")
 plt.show()
 # %%
 importlib.reload(hal.constants)
 from hal.constants import STICK_XY_CLUSTER_CENTERS_V0_1
 
-plt.scatter(STICK_XY_CLUSTER_CENTERS_V0_1[:, 0], STICK_XY_CLUSTER_CENTERS_V0_1[:, 1], color="red")
+plt.scatter(
+    STICK_XY_CLUSTER_CENTERS_V0_1[:, 0],
+    STICK_XY_CLUSTER_CENTERS_V0_1[:, 1],
+    color="red",
+)
 plt.axis("equal")
 plt.title("C-Stick Clusters (Coarser)")
 plt.show()
@@ -623,7 +679,9 @@ deduped_new_pts_y
 # %%
 from hal.constants import STICK_XY_CLUSTER_CENTERS_V3
 
-plt.scatter(STICK_XY_CLUSTER_CENTERS_V3[:, 0], STICK_XY_CLUSTER_CENTERS_V3[:, 1], color="blue")
+plt.scatter(
+    STICK_XY_CLUSTER_CENTERS_V3[:, 0], STICK_XY_CLUSTER_CENTERS_V3[:, 1], color="blue"
+)
 plt.axis("equal")
 plt.show()
 # %%

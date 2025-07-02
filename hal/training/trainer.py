@@ -53,7 +53,10 @@ class Trainer(torch.nn.Module, abc.ABC):
         return get_log_dir(params)
 
     def __init__(
-        self, config: TrainConfig, train_loader: StreamingDataLoader, val_loader: StreamingDataLoader
+        self,
+        config: TrainConfig,
+        train_loader: StreamingDataLoader,
+        val_loader: StreamingDataLoader,
     ) -> None:
         super().__init__()
         self.config = config
@@ -82,35 +85,44 @@ class Trainer(torch.nn.Module, abc.ABC):
         )
 
         batch_size = get_world_size() * self.config.local_batch_size
-        self.scheduler = CosineAnnealingLR(self.opt, T_max=int(config.n_samples / batch_size), eta_min=1e-6)
+        self.scheduler = CosineAnnealingLR(
+            self.opt, T_max=int(config.n_samples / batch_size), eta_min=1e-6
+        )
         self.ckpt = Checkpoint(
-            model=self.model, config=self.config, artifact_dir=self.artifact_dir, keep_ckpts=self.config.keep_ckpts
+            model=self.model,
+            config=self.config,
+            artifact_dir=self.artifact_dir,
+            keep_ckpts=self.config.keep_ckpts,
         )
 
     def __str__(self) -> str:
         return "\n".join(
             (
                 "\n",
-                f'{" Model ":-^80}',
+                f"{' Model ':-^80}",
                 str(self.model),
-                f'{" Parameters ":-^80}',
+                f"{' Parameters ':-^80}",
                 report_module_weights(self.model),
-                f'{" Config ":-^80}',
+                f"{' Config ':-^80}",
                 "\n".join(f"{k:20s}: {v}" for k, v in vars(self.config).items()),
             )
         )
 
     def _restore_checkpoint(self) -> int:
         resume_idx, _ = self.ckpt.restore(
-            idx=self.config.resume_idx, device=self.device, train_loader=self.train_loader, val_loader=self.val_loader
+            idx=self.config.resume_idx,
+            device=self.device,
+            train_loader=self.train_loader,
+            val_loader=self.val_loader,
         )
         if resume_idx > 0:
-            log_if_master(f"Resuming training at {resume_idx} ({resume_idx / (1 << 20):.2f}M samples)")
+            log_if_master(
+                f"Resuming training at {resume_idx} ({resume_idx / (1 << 20):.2f}M samples)"
+            )
         return resume_idx
 
     @abc.abstractmethod
-    def loss(self, pred: TensorDict, target: TensorDict) -> TensorDict:
-        ...
+    def loss(self, pred: TensorDict, target: TensorDict) -> TensorDict: ...
 
     def forward_loop(self, batch: TensorDict) -> TensorDict:
         inputs: TensorDict = batch["inputs"]
@@ -119,13 +131,14 @@ class Trainer(torch.nn.Module, abc.ABC):
         pred: TensorDict = self.model(inputs)
         B, L, *_ = pred.shape
         # Important! Reshape the batch to 2D for proper CE loss calculation
-        loss_by_head = self.loss(pred.view(B * L, -1).squeeze(), targets.view(B * L, -1).squeeze())
+        loss_by_head = self.loss(
+            pred.view(B * L, -1).squeeze(), targets.view(B * L, -1).squeeze()
+        )
 
         return loss_by_head
 
     @abc.abstractmethod
-    def sum_losses(self, loss_by_head: TensorDict) -> TensorDict:
-        ...
+    def sum_losses(self, loss_by_head: TensorDict) -> TensorDict: ...
 
     def train_op(self, batch: TensorDict) -> MetricsDict:
         self.opt.zero_grad(set_to_none=True)
@@ -134,7 +147,9 @@ class Trainer(torch.nn.Module, abc.ABC):
         loss_total = self.sum_losses(loss_by_head)
         loss_total.backward()  # type: ignore
 
-        grad_norm_total = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.grad_clip_norm)
+        grad_norm_total = torch.nn.utils.clip_grad_norm_(
+            self.model.parameters(), self.config.grad_clip_norm
+        )
 
         self.opt.step()
         self.scheduler.step()
@@ -171,7 +186,9 @@ class Trainer(torch.nn.Module, abc.ABC):
         with torch.no_grad():
             loss_by_head = self.forward_loop(batch)
         # We compute loss_total & averages once outside of val_op
-        metrics_dict = {f"val/{k}": v.item() for k, v in loss_by_head.detach().to("cpu").items()}
+        metrics_dict = {
+            f"val/{k}": v.item() for k, v in loss_by_head.detach().to("cpu").items()
+        }
         return metrics_dict
 
     def train_step(self, batch: TensorDict, writer: Writer, step: int) -> None:
@@ -181,7 +198,9 @@ class Trainer(torch.nn.Module, abc.ABC):
         metrics = self.train_op(batch)
         writer.log(metrics, step=step, commit=False)
 
-    def train_loop(self, train_loader: Iterable[TensorDict], val_loader: Iterable[TensorDict]) -> None:
+    def train_loop(
+        self, train_loader: Iterable[TensorDict], val_loader: Iterable[TensorDict]
+    ) -> None:
         log_if_master(self)
         log_if_master(f"Saving to {str(self.artifact_dir)}")
 
@@ -196,7 +215,9 @@ class Trainer(torch.nn.Module, abc.ABC):
                 self.train()
                 range_iter = trange(
                     i + batch_size,
-                    i + self.config.report_len + batch_size,  # end at even multiple of report_len
+                    i
+                    + self.config.report_len
+                    + batch_size,  # end at even multiple of report_len
                     batch_size,
                     leave=False,
                     unit="samples",
@@ -210,18 +231,28 @@ class Trainer(torch.nn.Module, abc.ABC):
                     self.samples = samples
                 t1 = time.perf_counter()
                 writer.log(
-                    {"throughput/samples_per_sec_train": self.config.report_len / (t1 - t0)},
+                    {
+                        "throughput/samples_per_sec_train": self.config.report_len
+                        / (t1 - t0)
+                    },
                     step=self.samples,
                     commit=False,
                 )
 
                 # Save checkpoint & configs before validation & closed loop eval
-                self.ckpt.save(self.samples, train_loader=self.train_loader, val_loader=self.val_loader)
+                self.ckpt.save(
+                    self.samples,
+                    train_loader=self.train_loader,
+                    val_loader=self.val_loader,
+                )
 
                 self.validate(val_loader, writer=writer, step=self.samples)
                 t2 = time.perf_counter()
                 writer.log(
-                    {"throughput/samples_per_sec_val": self.config.n_val_samples / (t2 - t1)},
+                    {
+                        "throughput/samples_per_sec_val": self.config.n_val_samples
+                        / (t2 - t1)
+                    },
                     step=self.samples,
                     commit=True,
                 )
@@ -248,7 +279,10 @@ class Trainer(torch.nn.Module, abc.ABC):
         self.eval()
 
         eval_config = self.config.eval
-        should_closed_loop_eval = eval_config.n_workers > 0 and step % eval_config.closed_loop_eval_every_n == 0
+        should_closed_loop_eval = (
+            eval_config.n_workers > 0
+            and step % eval_config.closed_loop_eval_every_n == 0
+        )
         if should_closed_loop_eval:
             logger.debug("Starting closed loop evaluation")
             eval_stats_queue: mp.Queue = mp.Queue()
@@ -283,7 +317,9 @@ class Trainer(torch.nn.Module, abc.ABC):
             for k, v in metrics_dict.items():
                 concat_metrics[k].append(v)
 
-        loss_dict = {k: sum(v) / len(v) for k, v in concat_metrics.items() if "loss" in k}
+        loss_dict = {
+            k: sum(v) / len(v) for k, v in concat_metrics.items() if "loss" in k
+        }
         loss_total = sum(v for k, v in loss_dict.items() if "loss" in k)
         loss_dict["val/loss_total"] = loss_total
 
@@ -293,8 +329,14 @@ class Trainer(torch.nn.Module, abc.ABC):
                 logger.debug("Waiting for closed loop evaluation")
                 eval_process.join(timeout=60 * 8 + 30)
                 # Standard match time limit is 8 minutes, plus buffer for setup/teardown
-                closed_loop_eval_stats: EpisodeStats = eval_stats_queue.get(block=True, timeout=1.0)
-                loss_dict.update(closed_loop_eval_stats.to_wandb_dict(prefix="closed_loop_eval", player="p1"))
+                closed_loop_eval_stats: EpisodeStats = eval_stats_queue.get(
+                    block=True, timeout=1.0
+                )
+                loss_dict.update(
+                    closed_loop_eval_stats.to_wandb_dict(
+                        prefix="closed_loop_eval", player="p1"
+                    )
+                )
             except Empty:
                 logger.warning("Closed loop evaluation stats not available")
             finally:

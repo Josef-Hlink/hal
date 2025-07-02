@@ -43,19 +43,35 @@ class Preprocessor:
         self.normalization_fn_by_feature_name: Dict[str, Transformation] = {}
         self.seq_len = data_config.seq_len
 
-        self.target_config = TargetConfigRegistry.get(self.data_config.target_preprocessing_fn)
-        self.input_config = InputConfigRegistry.get(self.data_config.input_preprocessing_fn)
+        self.target_config = TargetConfigRegistry.get(
+            self.data_config.target_preprocessing_fn
+        )
+        self.input_config = InputConfigRegistry.get(
+            self.data_config.input_preprocessing_fn
+        )
         # Dynamically update input config with user-specified embedding shapes and target features
-        self.input_config = update_input_shapes_with_data_config(self.input_config, data_config)
-        self.postprocess_preds_fn = PostprocessConfigRegistry.get(self.data_config.pred_postprocessing_fn)
+        self.input_config = update_input_shapes_with_data_config(
+            self.input_config, data_config
+        )
+        self.postprocess_preds_fn = PostprocessConfigRegistry.get(
+            self.data_config.pred_postprocessing_fn
+        )
 
         self.frame_offsets_by_input = self.input_config.frame_offsets_by_input
         self.frame_offsets_by_target = self.target_config.frame_offsets_by_target
         self.max_offset = max(
-            (*self.frame_offsets_by_input.values(), *self.frame_offsets_by_target.values()), default=0
+            (
+                *self.frame_offsets_by_input.values(),
+                *self.frame_offsets_by_target.values(),
+            ),
+            default=0,
         )
         self.min_offset = min(
-            (*self.frame_offsets_by_input.values(), *self.frame_offsets_by_target.values()), default=0
+            (
+                *self.frame_offsets_by_input.values(),
+                *self.frame_offsets_by_target.values(),
+            ),
+            default=0,
         )
         self.total_offset_size = self.max_offset - self.min_offset
 
@@ -93,7 +109,11 @@ class Preprocessor:
             TensorDict of shape (trajectory_sampling_len,)
         """
         episode_len = td.shape[0]
-        sample_index = 0 if debug else random.randint(0, episode_len - self.trajectory_sampling_len)
+        sample_index = (
+            0
+            if debug
+            else random.randint(0, episode_len - self.trajectory_sampling_len)
+        )
         return td[sample_index : sample_index + self.trajectory_sampling_len]
 
     def preprocess_inputs(self, sample_T: TensorDict, ego: Player) -> TensorDict:
@@ -176,17 +196,22 @@ class Preprocessor:
         return td
 
 
-def convert_ndarray_to_tensordict(ndarrays_by_feature: dict[str, np.ndarray]) -> TensorDict:
+def convert_ndarray_to_tensordict(
+    ndarrays_by_feature: dict[str, np.ndarray],
+) -> TensorDict:
     """Convert a dict of ndarrays to a TensorDict."""
     frames = ndarrays_by_feature["frame"]
     assert all(len(ndarray) == len(frames) for ndarray in ndarrays_by_feature.values())
     tensor_slice_by_feature_name = {
-        feature_name: torch.from_numpy(feature_L.copy()) for feature_name, feature_L in ndarrays_by_feature.items()
+        feature_name: torch.from_numpy(feature_L.copy())
+        for feature_name, feature_L in ndarrays_by_feature.items()
     }
     return TensorDict(tensor_slice_by_feature_name, batch_size=(len(frames),))
 
 
-def update_input_shapes_with_data_config(input_config: InputConfig, data_config: DataConfig) -> InputConfig:
+def update_input_shapes_with_data_config(
+    input_config: InputConfig, data_config: DataConfig
+) -> InputConfig:
     return attr.evolve(
         input_config,
         input_shapes_by_head={
@@ -219,7 +244,9 @@ def preprocess_input_features(
         perspective = "ego" if player == ego else "opponent"
         for feature_name in config.player_features:
             # Convert feature name from p1/p2 to either ego/opponent
-            perspective_feature_name = f"{perspective}_{feature_name}"  # e.g. "p1_action"
+            perspective_feature_name = (
+                f"{perspective}_{feature_name}"  # e.g. "p1_action"
+            )
             # TODO handle Nana
             player_feature_name = f"{player}_{feature_name}"  # e.g. "ego_action"
             transform = transformation_by_feature_name[feature_name]
@@ -229,13 +256,17 @@ def preprocess_input_features(
 
     # Process non-player features
     non_player_features = [
-        feature_name for feature_name in transformation_by_feature_name if feature_name not in config.player_features
+        feature_name
+        for feature_name in transformation_by_feature_name
+        if feature_name not in config.player_features
     ]
     for feature_name in non_player_features:
         transform = transformation_by_feature_name[feature_name]
         if feature_name in sample_T:
             # Single feature transformation
-            processed_features[feature_name] = transform(sample_T[feature_name], stats[feature_name])
+            processed_features[feature_name] = transform(
+                sample_T[feature_name], stats[feature_name]
+            )
         else:
             # Multi-feature transformation (e.g. controller inputs)
             # Pass entire dict and player perspective
@@ -245,8 +276,12 @@ def preprocess_input_features(
     concatenated_features_by_head_name: Dict[str, torch.Tensor] = {}
     seen_feature_names: Set[str] = set()
     for head_name, feature_names in config.grouped_feature_names_by_head.items():
-        features_to_concatenate = [processed_features[feature_name] for feature_name in feature_names]
-        concatenated_features_by_head_name[head_name] = torch.cat(features_to_concatenate, dim=-1)
+        features_to_concatenate = [
+            processed_features[feature_name] for feature_name in feature_names
+        ]
+        concatenated_features_by_head_name[head_name] = torch.cat(
+            features_to_concatenate, dim=-1
+        )
         seen_feature_names.update(feature_names)
 
     # Add features that are not associated with any head to default head (e.g. 'gamestate')
@@ -256,13 +291,20 @@ def preprocess_input_features(
             if feature_tensor.ndim == 1:
                 feature_tensor = feature_tensor.unsqueeze(-1)
             unseen_feature_tensors.append(feature_tensor)
-    concatenated_features_by_head_name[DEFAULT_HEAD_NAME] = torch.cat(unseen_feature_tensors, dim=-1)
+    concatenated_features_by_head_name[DEFAULT_HEAD_NAME] = torch.cat(
+        unseen_feature_tensors, dim=-1
+    )
 
-    return TensorDict(concatenated_features_by_head_name, batch_size=sample_T.batch_size)
+    return TensorDict(
+        concatenated_features_by_head_name, batch_size=sample_T.batch_size
+    )
 
 
 def _offset_features(
-    tensor_dict: TensorDict, frame_offsets: dict[str, int], min_offset: int, seq_len: int
+    tensor_dict: TensorDict,
+    frame_offsets: dict[str, int],
+    min_offset: int,
+    seq_len: int,
 ) -> TensorDict:
     """
     Helper function that offsets and slices features from a TensorDict
@@ -279,9 +321,9 @@ def _offset_features(
     """
     available_features: set[str] = set(tensor_dict.keys())  # type: ignore
     offset_keys = set(frame_offsets.keys())
-    assert all(
-        feature in available_features for feature in offset_keys
-    ), f"Features with offsets must exist in sample. Missing: {offset_keys - available_features}\nAvailable: {available_features}"
+    assert all(feature in available_features for feature in offset_keys), (
+        f"Features with offsets must exist in sample. Missing: {offset_keys - available_features}\nAvailable: {available_features}"
+    )
 
     # What frame the training sequence starts on
     reference_frame_idx = abs(min(0, min_offset))
@@ -297,10 +339,15 @@ def _offset_features(
     return TensorDict(offset_features, batch_size=(seq_len,))
 
 
-def postprocess_predictions(pred_C: TensorDict, postprocess_config: PostprocessConfig) -> Dict[str, Any]:
+def postprocess_predictions(
+    pred_C: TensorDict, postprocess_config: PostprocessConfig
+) -> Dict[str, Any]:
     processed_features: Dict[str, Any] = {}
 
-    for feature_name, transformation in postprocess_config.transformation_by_controller_input.items():
+    for (
+        feature_name,
+        transformation,
+    ) in postprocess_config.transformation_by_controller_input.items():
         processed_features[feature_name] = transformation(pred_C)
 
     return processed_features

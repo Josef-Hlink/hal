@@ -6,7 +6,9 @@ import numpy as np
 from hal.data.masked_dataset import MaskedDataset
 
 # %%
-ds = MaskedDataset(local="/opt/projects/hal2/data/ranked/diamond/train", batch_size=1, shuffle=True)
+ds = MaskedDataset(
+    local="/opt/projects/hal2/data/ranked/diamond/train", batch_size=1, shuffle=True
+)
 
 # %%
 x = ds[0]

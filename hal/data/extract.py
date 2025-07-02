@@ -51,7 +51,10 @@ def extract_archive(filepath, dry_run=False, remove=False) -> bool:
             retcode = proc.returncode
 
         if retcode != 0:
-            print(f"Error: 7z exited with code {retcode} for file '{filepath}'", file=sys.stderr)
+            print(
+                f"Error: 7z exited with code {retcode} for file '{filepath}'",
+                file=sys.stderr,
+            )
             return False
 
         if remove:

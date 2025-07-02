@@ -47,7 +47,9 @@ def setup_distributed() -> bool:
     # Initialize the process group
     dist.init_process_group(backend="nccl", world_size=world_size, rank=rank)
 
-    logger.info(f"Initialized process group: rank={rank}, world_size={world_size}, local_rank={local_rank}")
+    logger.info(
+        f"Initialized process group: rank={rank}, world_size={world_size}, local_rank={local_rank}"
+    )
     return True
 
 
@@ -101,7 +103,9 @@ def wrap_model_distributed(
 
     if dist.is_initialized():
         local_rank = int(os.environ["LOCAL_RANK"])
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank)
+        model = torch.nn.parallel.DistributedDataParallel(
+            model, device_ids=[local_rank], output_device=local_rank
+        )
 
     return model
 
@@ -137,7 +141,9 @@ class ConcreteTrainer(Trainer):
         return self.model(batch)
 
 
-def create_data_loader(config: TrainConfig, is_train: bool = True) -> StreamingDataLoader:
+def create_data_loader(
+    config: TrainConfig, is_train: bool = True
+) -> StreamingDataLoader:
     """
     Create a data loader for training or validation.
 
@@ -164,7 +170,9 @@ def create_data_loader(config: TrainConfig, is_train: bool = True) -> StreamingD
             streams = [LocalShardedStream(str(stream_dir))]
         except ImportError:
             # Fallback if LocalShardedStream is not available
-            logger.error("LocalShardedStream not found. Please specify streams in config.")
+            logger.error(
+                "LocalShardedStream not found. Please specify streams in config."
+            )
             raise
 
     # Create the data loader

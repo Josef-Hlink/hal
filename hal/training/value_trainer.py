@@ -25,7 +25,10 @@ class ValueTrainer(Trainer):
     """
 
     def __init__(
-        self, config: ValueTrainerConfig, train_loader: StreamingDataLoader, val_loader: StreamingDataLoader
+        self,
+        config: ValueTrainerConfig,
+        train_loader: StreamingDataLoader,
+        val_loader: StreamingDataLoader,
     ) -> None:
         super().__init__(config, train_loader, val_loader)
         self.config = config
@@ -50,7 +53,9 @@ class ValueTrainer(Trainer):
             # Advantage weighted regression
             advantages = target["value"] - pred_value.detach()
             weights = torch.exp(advantages / self.config.beta)
-            weights = torch.clamp(weights, 1e-8, self.config.weight_clip)  # Clip to avoid exploding gradients
+            weights = torch.clamp(
+                weights, 1e-8, self.config.weight_clip
+            )  # Clip to avoid exploding gradients
         else:
             weights = 1.0
 
@@ -62,13 +67,17 @@ class ValueTrainer(Trainer):
                 feature_name = f"{target_feature}_{frame}"
 
                 if feature_name in pred and feature_name in target:
-                    frame_loss = weights * loss_fn(pred[feature_name], target[feature_name], reduction="none")
+                    frame_loss = weights * loss_fn(
+                        pred[feature_name], target[feature_name], reduction="none"
+                    )
                     frame_loss = frame_loss.mean()
                     loss_dict[f"loss_{feature_name}"] = frame_loss
                     feature_losses.append(frame_loss)
 
             if feature_losses:
-                loss_dict[f"loss_{target_feature}"] = torch.mean(torch.stack(feature_losses)).detach()
+                loss_dict[f"loss_{target_feature}"] = torch.mean(
+                    torch.stack(feature_losses)
+                ).detach()
 
         return loss_dict
 
@@ -92,7 +101,9 @@ def main(train_config: ValueTrainerConfig) -> None:
     logger.info(train_config)
 
     train_loader, val_loader = get_dataloaders(train_config)
-    trainer = ValueTrainer(config=train_config, train_loader=train_loader, val_loader=val_loader)
+    trainer = ValueTrainer(
+        config=train_config, train_loader=train_loader, val_loader=val_loader
+    )
     trainer.train_loop(train_loader, val_loader)
 
 

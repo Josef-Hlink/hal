@@ -1,5 +1,6 @@
 # %%
 """Using DDP with TensorDict"""
+
 import os
 import sys
 
@@ -23,7 +24,11 @@ from hal.training.distributed import is_master
 def get_memory_usage(obj):
     process = psutil.Process()
     memory_info = process.memory_info()
-    return {"object_size": sys.getsizeof(obj), "rss": memory_info.rss, "vms": memory_info.vms}
+    return {
+        "object_size": sys.getsizeof(obj),
+        "rss": memory_info.rss,
+        "vms": memory_info.vms,
+    }
 
 
 def get_device() -> str:
@@ -77,7 +82,9 @@ def load_data() -> tuple[TensorDict, TensorDict]:
                 (len(training_data), *training_data[0][0].squeeze().shape),
                 dtype=torch.float32,
             ),
-            "targets": MemoryMappedTensor.empty((len(training_data),), dtype=torch.int64),
+            "targets": MemoryMappedTensor.empty(
+                (len(training_data),), dtype=torch.int64
+            ),
         },
         batch_size=[len(training_data)],
         device="cpu",  # pin to shared memory
@@ -115,10 +122,14 @@ def load_data() -> tuple[TensorDict, TensorDict]:
     return training_data_td, test_data_td
 
 
-def train_ddp(rank, world_size, training_data_td: TensorDict, test_data_td: TensorDict) -> None:
+def train_ddp(
+    rank, world_size, training_data_td: TensorDict, test_data_td: TensorDict
+) -> None:
     setup(rank, world_size)
     device = torch.device(f"cuda:{rank}")  # Use the GPU corresponding to the rank
-    print(f"{rank=}, Mem usage of training_data_td: {get_memory_usage(training_data_td)}")
+    print(
+        f"{rank=}, Mem usage of training_data_td: {get_memory_usage(training_data_td)}"
+    )
     # for k, v in training_data_td.items():
     #     # print(f"{rank=}, Mem address of {k}: {hex(id(v))}")
     #     # Increment last slice by rank and save it back
@@ -133,8 +144,12 @@ def train_ddp(rank, world_size, training_data_td: TensorDict, test_data_td: Tens
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
 
-    train_sampler = DistributedSampler(training_data_td, num_replicas=world_size, rank=rank)
-    train_dataloader = DataLoader(training_data_td, batch_size=64, sampler=train_sampler, collate_fn=lambda x: x)
+    train_sampler = DistributedSampler(
+        training_data_td, num_replicas=world_size, rank=rank
+    )
+    train_dataloader = DataLoader(
+        training_data_td, batch_size=64, sampler=train_sampler, collate_fn=lambda x: x
+    )
     size = len(train_dataloader)
     print(f"{rank=} Initialized dataloader")
 
@@ -169,4 +184,9 @@ if __name__ == "__main__":
 
     # Use mp.spawn to launch the training process on each GPU
     print(f"Spawning workers")
-    mp.spawn(train_ddp, args=(world_size, training_data_td, test_data_td), nprocs=world_size, join=True)
+    mp.spawn(
+        train_ddp,
+        args=(world_size, training_data_td, test_data_td),
+        nprocs=world_size,
+        join=True,
+    )

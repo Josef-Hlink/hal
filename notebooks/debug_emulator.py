@@ -15,10 +15,16 @@ PLAYER_2_PORT = 2
 def run_episode(rank: int, port: int, max_steps: int = 8 * 60 * 60) -> None:
     console_kwargs = get_headless_console_kwargs(rank=rank, udp_port=port)
     console = melee.Console(**console_kwargs)
-    logger.info(f"Worker {rank}: slippi address {console.slippi_address}, port {console.slippi_port}")
+    logger.info(
+        f"Worker {rank}: slippi address {console.slippi_address}, port {console.slippi_port}"
+    )
 
-    controller_1 = melee.Controller(console=console, port=PLAYER_1_PORT, type=melee.ControllerType.STANDARD)
-    controller_2 = melee.Controller(console=console, port=PLAYER_2_PORT, type=melee.ControllerType.STANDARD)
+    controller_1 = melee.Controller(
+        console=console, port=PLAYER_1_PORT, type=melee.ControllerType.STANDARD
+    )
+    controller_2 = melee.Controller(
+        console=console, port=PLAYER_2_PORT, type=melee.ControllerType.STANDARD
+    )
 
     # Run the console
     console.run(iso_path=ISO_PATH)
@@ -56,9 +62,16 @@ def run_episode(rank: int, port: int, max_steps: int = 8 * 60 * 60) -> None:
             logger.info(f"Iteration {i}: Menu state: {gamestate.menu_state}")
 
             if console.processingtime * 1000 > 12:
-                logger.info("WARNING: Last frame took " + str(console.processingtime * 1000) + "ms to process.")
+                logger.info(
+                    "WARNING: Last frame took "
+                    + str(console.processingtime * 1000)
+                    + "ms to process."
+                )
 
-            if gamestate.menu_state not in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
+            if gamestate.menu_state not in [
+                melee.Menu.IN_GAME,
+                melee.Menu.SUDDEN_DEATH,
+            ]:
                 logger.info("Menu helper")
                 if match_started:
                     break

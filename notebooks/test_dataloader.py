@@ -26,7 +26,9 @@ train_config = TrainConfig(
     dataworker=DataworkerConfig(),
 )
 # %%
-train_loader, val_loader = create_tensordict_dataloaders(train_config, rank=None, world_size=None)
+train_loader, val_loader = create_tensordict_dataloaders(
+    train_config, rank=None, world_size=None
+)
 train_iter = iter(train_loader)
 # %%
 for i, (x, y) in enumerate(train_iter):

@@ -56,7 +56,9 @@ replay.schema
 
 
 # %%
-def visualize_position_heatmap(pyarrow_table: pa.Table, x_field: str, y_field: str, title: str) -> None:
+def visualize_position_heatmap(
+    pyarrow_table: pa.Table, x_field: str, y_field: str, title: str
+) -> None:
     # Extract x and y values
     x = pyarrow_table[x_field].to_numpy()
     y = pyarrow_table[y_field].to_numpy()
@@ -96,10 +98,14 @@ plt.show()
 
 
 # %%
-visualize_position_heatmap(table, "p1_position_x", "p1_position_y", "Player 1 Position Heatmap")
+visualize_position_heatmap(
+    table, "p1_position_x", "p1_position_y", "Player 1 Position Heatmap"
+)
 
 # %%
-visualize_position_heatmap(table, "p1_main_stick_x", "p1_main_stick_y", "Player 1 Main Stick Heatmap")
+visualize_position_heatmap(
+    table, "p1_main_stick_x", "p1_main_stick_y", "Player 1 Main Stick Heatmap"
+)
 
 # %%
 # search k-means for p1_main_stick_x
@@ -107,7 +113,9 @@ visualize_position_heatmap(table, "p1_main_stick_x", "p1_main_stick_y", "Player 
 
 # %%
 def kmeans_hyperparameter_search(data, max_clusters=150, n_init=3):
-    X = np.column_stack((data["p1_main_stick_x"].to_numpy(), data["p1_main_stick_y"].to_numpy()))
+    X = np.column_stack(
+        (data["p1_main_stick_x"].to_numpy(), data["p1_main_stick_y"].to_numpy())
+    )
 
     results = []
     for n_clusters in tqdm(range(2, max_clusters + 1)):
@@ -118,7 +126,12 @@ def kmeans_hyperparameter_search(data, max_clusters=150, n_init=3):
         inertia = kmeans.inertia_
 
         results.append(
-            {"n_clusters": n_clusters, "silhouette_score": silhouette_avg, "inertia": inertia, "model": kmeans}
+            {
+                "n_clusters": n_clusters,
+                "silhouette_score": silhouette_avg,
+                "inertia": inertia,
+                "model": kmeans,
+            }
         )
 
     return results
@@ -131,13 +144,21 @@ search_results = kmeans_hyperparameter_search(table)
 plt.figure(figsize=(12, 5))
 
 plt.subplot(1, 2, 1)
-plt.plot([r["n_clusters"] for r in search_results], [r["silhouette_score"] for r in search_results], "bo-")
+plt.plot(
+    [r["n_clusters"] for r in search_results],
+    [r["silhouette_score"] for r in search_results],
+    "bo-",
+)
 plt.xlabel("Number of clusters")
 plt.ylabel("Silhouette Score")
 plt.title("Silhouette Score vs. Number of Clusters")
 
 plt.subplot(1, 2, 2)
-plt.plot([r["n_clusters"] for r in search_results], [r["inertia"] for r in search_results], "ro-")
+plt.plot(
+    [r["n_clusters"] for r in search_results],
+    [r["inertia"] for r in search_results],
+    "ro-",
+)
 plt.xlabel("Number of clusters")
 plt.ylabel("Inertia")
 plt.title("Elbow Curve")
@@ -151,7 +172,9 @@ print(f"Best number of clusters: {best_model['n_clusters']}")
 print(f"Best silhouette score: {best_model['silhouette_score']:.4f}")
 
 # Visualize the best clustering result
-X = np.column_stack((table["p1_main_stick_x"].to_numpy(), table["p1_main_stick_y"].to_numpy()))
+X = np.column_stack(
+    (table["p1_main_stick_x"].to_numpy(), table["p1_main_stick_y"].to_numpy())
+)
 cluster_labels = best_model["model"].predict(X)
 
 plt.figure(figsize=(8, 6))
@@ -163,7 +186,9 @@ plt.show()
 
 
 # %%
-X = np.column_stack((table["p1_main_stick_x"].to_numpy(), table["p1_main_stick_y"].to_numpy()))
+X = np.column_stack(
+    (table["p1_main_stick_x"].to_numpy(), table["p1_main_stick_y"].to_numpy())
+)
 kmeans = KMeans(n_clusters=23, n_init=5, random_state=42)
 cluster_labels = kmeans.fit_predict(X)
 
@@ -171,7 +196,9 @@ cluster_labels = kmeans.fit_predict(X)
 cluster_centers = kmeans.cluster_centers_
 plt.figure(figsize=(8, 6))
 plt.scatter(X[:, 0], X[:, 1], c=cluster_labels, s=50, cmap="viridis")
-plt.scatter(cluster_centers[:, 0], cluster_centers[:, 1], c="red", s=200, alpha=0.75, marker="X")
+plt.scatter(
+    cluster_centers[:, 0], cluster_centers[:, 1], c="red", s=200, alpha=0.75, marker="X"
+)
 plt.xlabel("p1_main_stick_x")
 plt.ylabel("p1_main_stick_y")
 plt.title("Cluster Locations")
@@ -183,7 +210,12 @@ print(cluster_centers)
 # %%
 STICK_XY_CLUSTER_CENTERS_V0
 plt.figure(figsize=(8, 6))
-plt.scatter(STICK_XY_CLUSTER_CENTERS_V0[:, 0], STICK_XY_CLUSTER_CENTERS_V0[:, 1], cmap="viridis", s=50)
+plt.scatter(
+    STICK_XY_CLUSTER_CENTERS_V0[:, 0],
+    STICK_XY_CLUSTER_CENTERS_V0[:, 1],
+    cmap="viridis",
+    s=50,
+)
 plt.xlabel("p1_main_stick_x")
 plt.ylabel("p1_main_stick_y")
 plt.title("Cluster Locations")
@@ -207,7 +239,14 @@ for button in buttons:
 
 # %%
 # Visualize analog values over time
-analogs = ["main_stick_x", "main_stick_y", "c_stick_x", "c_stick_y", "l_shoulder", "r_shoulder"]
+analogs = [
+    "main_stick_x",
+    "main_stick_y",
+    "c_stick_x",
+    "c_stick_y",
+    "l_shoulder",
+    "r_shoulder",
+]
 for analog in analogs:
     plt.figure(figsize=(8, 6))
     plt.plot(replay[f"p1_{analog}"].to_numpy(), label=analog)

@@ -24,8 +24,12 @@ class CausalSelfAttentionRelativePositionWithCache(CausalSelfAttentionRelativePo
         layer_cache: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
         return_kv: bool = False,
     ) -> torch.Tensor | Tuple[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-        B, L, D = x.size()  # batch size, sequence length, embedding dimensionality (n_embd)
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        B, L, D = (
+            x.size()
+        )  # batch size, sequence length, embedding dimensionality (n_embd)
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
         q, k, v = self.c_attn(x).split(self.n_embd, dim=2)
@@ -46,7 +50,9 @@ class CausalSelfAttentionRelativePositionWithCache(CausalSelfAttentionRelativePo
         Srel = skew(QEr)  # (B, nh, L, L)
 
         # causal self-attention
-        QK_t = q @ k.transpose(-2, -1)  # (B, nh, L, hs) x (B, nh, hs, L) -> (B, nh, L, L)
+        QK_t = q @ k.transpose(
+            -2, -1
+        )  # (B, nh, L, hs) x (B, nh, hs, L) -> (B, nh, L, L)
         scale = 1.0 / math.sqrt(k.size(-1))
         att = (QK_t + Srel) * scale
         if layer_cache is None:
@@ -54,7 +60,9 @@ class CausalSelfAttentionRelativePositionWithCache(CausalSelfAttentionRelativePo
         att = torch.nn.functional.softmax(att, dim=-1)
         att = self.attn_dropout(att)
         y = att @ v  # (B, nh, L, L) x (B, nh, L, hs) -> (B, nh, L, hs)
-        y = y.transpose(1, 2).contiguous().view(B, L, D)  # re-assemble all head outputs side by side
+        y = (
+            y.transpose(1, 2).contiguous().view(B, L, D)
+        )  # re-assemble all head outputs side by side
 
         # output projection
         y = self.resid_dropout(self.c_proj(y))
@@ -90,7 +98,9 @@ class BlockWithCache(nn.Module):
 
 
 class KVCache:
-    def __init__(self, batch: int, config: GPTConfig, device: torch.device | str) -> None:
+    def __init__(
+        self, batch: int, config: GPTConfig, device: torch.device | str
+    ) -> None:
         self.batch = batch
         self.config = config
         self.device = device
@@ -112,15 +122,17 @@ class KVCache:
             device=self.device,
             dtype=torch.float32,
         )
-    
-    def update()
 
 
 class GPTMultiTokenValueWithCache(GPTMultiToken):
-    def __init__(self, preprocessor: Preprocessor, gpt_config: MultiTokenGPTConfig) -> None:
+    def __init__(
+        self, preprocessor: Preprocessor, gpt_config: MultiTokenGPTConfig
+    ) -> None:
         super().__init__(preprocessor, gpt_config)
         # Replace transformer blocks with cached versions
-        self.transformer.h = nn.ModuleList([BlockWithCache(gpt_config) for _ in range(gpt_config.n_layer)])
+        self.transformer.h = nn.ModuleList(
+            [BlockWithCache(gpt_config) for _ in range(gpt_config.n_layer)]
+        )
 
         # Add value head
         self.value_head = nn.Sequential(
@@ -135,7 +147,9 @@ class GPTMultiTokenValueWithCache(GPTMultiToken):
         # apply special scaled init to the residual projections, per GPT-2 paper
         for pn, p in self.named_parameters():
             if pn.endswith("c_proj.weight"):
-                torch.nn.init.normal_(p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer))
+                torch.nn.init.normal_(
+                    p, mean=0.0, std=0.02 / math.sqrt(2 * gpt_config.n_layer)
+                )
 
     def forward_with_kv_cache(
         self,
@@ -154,7 +168,9 @@ class GPTMultiTokenValueWithCache(GPTMultiToken):
             TensorDict of model outputs, and optionally updated KV caches
         """
         B, L, _ = inputs["gamestate"].shape
-        assert L <= self.block_size, f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        assert L <= self.block_size, (
+            f"Cannot forward sequence of length {L}, block size is only {self.block_size}"
+        )
 
         # Concatenate embeddings and numerical inputs -> project down
         combined_inputs_BLG = self._embed_inputs(inputs)
@@ -176,18 +192,31 @@ class GPTMultiTokenValueWithCache(GPTMultiToken):
         # Process all time steps at once for each output mode, autoregressively decode next head
         # (B,L,D) -> (B,L,N*C)
         shoulder: torch.Tensor = self.shoulder_head(x_BLD)
-        c_stick: torch.Tensor = self.c_stick_head(torch.cat((x_BLD, shoulder.detach()), dim=-1))
+        c_stick: torch.Tensor = self.c_stick_head(
+            torch.cat((x_BLD, shoulder.detach()), dim=-1)
+        )
         main_stick: torch.Tensor = self.main_stick_head(
             torch.cat((x_BLD, shoulder.detach(), c_stick.detach()), dim=-1)
         )
         button: torch.Tensor = self.button_head(
-            torch.cat((x_BLD, shoulder.detach(), c_stick.detach(), main_stick.detach()), dim=-1)
+            torch.cat(
+                (x_BLD, shoulder.detach(), c_stick.detach(), main_stick.detach()),
+                dim=-1,
+            )
         )
 
-        shoulder = shoulder.view(B, L, self.num_multi_token_output_heads, self.shoulder_output_dim)
-        c_stick = c_stick.view(B, L, self.num_multi_token_output_heads, self.c_stick_output_dim)
-        main_stick = main_stick.view(B, L, self.num_multi_token_output_heads, self.main_stick_output_dim)
-        button = button.view(B, L, self.num_multi_token_output_heads, self.button_output_dim)
+        shoulder = shoulder.view(
+            B, L, self.num_multi_token_output_heads, self.shoulder_output_dim
+        )
+        c_stick = c_stick.view(
+            B, L, self.num_multi_token_output_heads, self.c_stick_output_dim
+        )
+        main_stick = main_stick.view(
+            B, L, self.num_multi_token_output_heads, self.main_stick_output_dim
+        )
+        button = button.view(
+            B, L, self.num_multi_token_output_heads, self.button_output_dim
+        )
 
         result = {}
         for i, offset in enumerate(self.multi_token_heads):
