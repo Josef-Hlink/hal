@@ -4,7 +4,17 @@ version = "0.1.0"
 description = "HAL - Melee AI System"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "attrs>=25.3.0",
+    "loguru>=0.7.3",
+    "melee",
+    "mosaicml-streaming>=0.10.0",
+    "numpy>=2.3.2",
+    "tensordict>=0.9.1",
+    "torch>=2.7.1",
+    "wandb>=0.21.0",
+    "yasoo>=0.12.6",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -46,3 +56,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["hal"]
+
+[tool.uv.sources]
+melee = { git = "https://github.com/vladfi1/libmelee.git", rev = "dev" }
