@@ -7,6 +7,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import get_origin, get_args
 
 import attr
 from streaming import Stream
@@ -176,6 +177,50 @@ def create_parser_for_attrs_class(
                 parser.add_argument(
                     arg_name,
                     type=field.type,
+                    help=field.metadata.get("help", ""),
+                    default=field.default
+                    if field.default is not attr.NOTHING
+                    else None,
+                    required=field.default is attr.NOTHING,
+                )
+
+    return parser
+
+
+def create_parser_for_attrs_class(
+    cls: Type[Any], parser: argparse.ArgumentParser, prefix: str = ""
+) -> argparse.ArgumentParser:
+    for field in attr.fields(cls):
+        arg_name = f"--{prefix}{field.name}"
+
+        if attr.has(field.type):
+            # Nested attrs class – recurse
+            create_parser_for_attrs_class(field.type, parser, f"{prefix}{field.name}.")
+        else:
+            # Determine correct type for argparse
+            arg_type = field.type
+
+            if get_origin(arg_type) is Union:
+                args = get_args(arg_type)
+                if len(args) == 2 and type(None) in args:
+                    # This is Optional[X] → unwrap to X
+                    arg_type = args[0] if args[1] is type(None) else args[1]
+
+            # Special handling for booleans
+            if arg_type == bool:
+                parser.add_argument(
+                    arg_name,
+                    action="store_true",
+                    help=field.metadata.get("help", ""),
+                    default=field.default
+                    if field.default is not attr.NOTHING
+                    else False,
+                    required=field.default is attr.NOTHING and arg_name != "--debug",
+                )
+            else:
+                parser.add_argument(
+                    arg_name,
+                    type=arg_type,
                     help=field.metadata.get("help", ""),
                     default=field.default
                     if field.default is not attr.NOTHING
