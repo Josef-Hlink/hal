@@ -44,6 +44,13 @@ class HALStreamingDataset(StreamingDataset):
         if self.data_config.debug_repeat_batch:
             self.debug_sample = self._get_item(0)
 
+    def __len__(self) -> int:
+        """Return the effective length of the dataset, respecting max_samples."""
+        original_length = super().__len__()
+        if self.data_config.max_samples > 0:
+            return min(original_length, self.data_config.max_samples)
+        return original_length
+
     def _get_item(self, idx: int | slice | list[int] | np.ndarray) -> TensorDict:
         episode_features_by_name = super().__getitem__(idx)
         episode_features_by_name = add_reward_to_episode(episode_features_by_name)
@@ -73,4 +80,10 @@ class HALStreamingDataset(StreamingDataset):
         """Expects episode features to match data/schema.py."""
         if self.data_config.debug_repeat_batch:
             return self.debug_sample
+
+        # Enforce max_samples bounds checking
+        if isinstance(idx, int) and self.data_config.max_samples > 0:
+            if idx >= self.data_config.max_samples:
+                raise IndexError(f"Index {idx} is out of bounds for max_samples={self.data_config.max_samples}")
+
         return self._get_item(idx)

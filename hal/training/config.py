@@ -58,6 +58,8 @@ class DataConfig:
     # Number of input and target frames in example
     seq_len: int = 256
     replay_filter: ReplayFilter = ReplayFilter()
+    # Maximum number of samples to use from dataset (-1 for unlimited)
+    max_samples: int = -1
 
     # Debugging
     debug_repeat_batch: bool = False
@@ -150,41 +152,6 @@ class ValueTrainerConfig(TrainConfig):
 
 
 TrainerConfigT = Union[TrainConfig, ValueTrainerConfig]
-
-
-def create_parser_for_attrs_class(
-    cls: Type[Any], parser: argparse.ArgumentParser, prefix: str = ""
-) -> argparse.ArgumentParser:
-    for field in attr.fields(cls):
-        arg_name = f"--{prefix}{field.name}"
-
-        if attr.has(field.type):
-            # If the field is another attrs class, recurse
-            create_parser_for_attrs_class(field.type, parser, f"{prefix}{field.name}.")
-        else:
-            # Otherwise, add it as a regular argument
-            if field.type == bool:
-                parser.add_argument(
-                    arg_name,
-                    action="store_true",
-                    help=field.metadata.get("help", ""),
-                    default=field.default
-                    if field.default is not attr.NOTHING
-                    else False,
-                    required=field.default is attr.NOTHING and arg_name != "--debug",
-                )
-            else:
-                parser.add_argument(
-                    arg_name,
-                    type=field.type,
-                    help=field.metadata.get("help", ""),
-                    default=field.default
-                    if field.default is not attr.NOTHING
-                    else None,
-                    required=field.default is attr.NOTHING,
-                )
-
-    return parser
 
 
 def create_parser_for_attrs_class(

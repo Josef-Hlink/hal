@@ -210,6 +210,10 @@ class Trainer(torch.nn.Module, abc.ABC):
         val_loader = repeater(val_loader)
         resume_idx = self._restore_checkpoint()
 
+        logger.info(
+            f"i {resume_idx} ns {self.config.n_samples} rl {self.config.report_len}"
+        )
+
         with Writer.create(wandb_config) as writer:
             for i in range(resume_idx, self.config.n_samples, self.config.report_len):
                 self.train()
