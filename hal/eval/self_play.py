@@ -93,6 +93,13 @@ def cpu_worker(
                 gamestate_td = extract_eval_gamestate_as_tensordict(gamestate)
                 model_inputs_1 = preprocessor.preprocess_inputs(gamestate_td, "p1")
                 model_inputs_2 = preprocessor.preprocess_inputs(gamestate_td, "p2")
+                logger.debug("==> CPU WORKER: model_inputs_1[-1] keys: {}", model_inputs_1[-1].keys())
+                for k in model_inputs_1[-1].keys():
+                    logger.debug("==> CPU WORKER: p1 {} shape: {}", k, model_inputs_1[-1][k].shape)
+
+                logger.debug("==> CPU WORKER: model_inputs_2[-1] keys: {}", model_inputs_2[-1].keys())
+                for k in model_inputs_2[-1].keys():
+                    logger.debug("==> CPU WORKER: p2 {} shape: {}", k, model_inputs_2[-1][k].shape)
                 model_inputs_P: TensorDict = torch.stack(
                     [model_inputs_1, model_inputs_2], dim=-1
                 )  # (1, players)
@@ -126,6 +133,13 @@ def cpu_worker(
                         f"Preprocess: {preprocess_time * 1000:.2f}ms, Transfer: {transfer_time * 1000:.2f}ms, Postprocess: {postprocess_time * 1000:.2f}ms"
                     )
 
+                logger.debug("==> CPU WORKER: controller_inputs_1 keys: {}", controller_inputs_1.keys())
+                for k, v in controller_inputs_1.items():
+                    logger.debug("==> CPU WORKER: controller_inputs_1 {} shape: {}", k, v.shape)
+
+                logger.debug("==> CPU WORKER: controller_inputs_2 keys: {}", controller_inputs_2.keys())
+                for k, v in controller_inputs_2.items():
+                    logger.debug("==> CPU WORKER: controller_inputs_2 {} shape: {}", k, v.shape)
                 # Send controller inputs to emulator, update gamestate
                 gamestate = gamestate_generator.send(
                     (controller_inputs_1, controller_inputs_2)
@@ -236,6 +250,16 @@ def gpu_worker(
         transfer_time = time.perf_counter() - transfer_start
 
         inference_start = time.perf_counter()
+
+        logger.debug("==> GPU WORKER: context_window_BPL shape: {}", context_window_BPL.shape)
+        try:
+            logger.debug("==> GPU WORKER: context_window_BPL batch_size: {}", context_window_BPL.batch_size)
+        except Exception as e:
+            logger.warning("==> GPU WORKER: accessing batch_size failed: {}", e)
+
+        for k in context_window_BPL.keys():
+            logger.debug("==> GPU WORKER: key '{}' shape: {}", k, context_window_BPL[k].shape)
+        
         with torch.no_grad():
             outputs_BL: TensorDict = model(context_window_BPL.view(B * P, L))
             outputs_BPL = outputs_BL.view(B, P, L)

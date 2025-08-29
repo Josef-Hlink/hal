@@ -91,7 +91,7 @@ def play(artifact_dir: str, character: str):
     )
     # opponent_controller = melee.Controller(console=console, port=2, type=melee.ControllerType.GCN_ADAPTER)
     opponent_controller = melee.Controller(
-        console=console, port=2, type=melee.ControllerType.STANDARD
+        console=console, port=2, type=melee.ControllerType.GCN_ADAPTER
     )
     console.run(
         iso_path=MAC_CISO_PATH
